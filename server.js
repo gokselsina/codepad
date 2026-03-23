@@ -85,8 +85,12 @@ app.post('/api/collection/:username', (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA fallback for routing
-app.get(/(.*)/, (req, res) => {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+app.use((req, res) => {
+    if (req.method === 'GET') {
+        res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+    } else {
+        res.status(404).json({ error: 'Endpoint bulunamadı' });
+    }
 });
 
 const PORT = process.env.PORT || 3001;
