@@ -68,15 +68,54 @@ app.post('/api/auth/login', (req, res) => {
     }
 });
 
+app.get('/api/users/search', (req, res) => {
+    const q = (req.query.q || '').toLowerCase();
+    const db = getDb();
+    const matches = Object.keys(db.users).filter(u => u.toLowerCase().includes(q)).slice(0, 10);
+    res.json({ users: matches });
+});
+
 app.get('/api/collection/:username', (req, res) => {
     const db = getDb();
-    res.json(db.collections[req.params.username] || { folders: [], notes: [] });
+    const reqUser = req.params.username;
+    let coll = db.collections[reqUser] ? JSON.parse(JSON.stringify(db.collections[reqUser])) : { folders: [], notes: [] };
+
+    const sharedNotes = [];
+    for (const [owner, data] of Object.entries(db.collections)) {
+        if (owner === reqUser) continue;
+        data.notes.forEach(n => {
+            if (n.sharedWith && n.sharedWith.includes(reqUser)) {
+                sharedNotes.push({
+                    ...n,
+                    isShared: true,
+                    owner: owner,
+                    folderId: 'f_shared',
+                    title: `${n.title} (Gönderen: ${owner})`
+                });
+            }
+        });
+    }
+
+    if (sharedNotes.length > 0) {
+        coll.notes = [...(coll.notes || []), ...sharedNotes];
+        if (!coll.folders.find(f => f.id === 'f_shared')) {
+            coll.folders.push({ id: 'f_shared', name: 'Paylaşılan Notlar 🤝', color: '#ffb058' });
+        }
+    }
+
+    res.json(coll);
 });
 
 app.post('/api/collection/:username', (req, res) => {
     const db = getDb();
-    if (!db.users[req.params.username]) return res.status(401).json({ error: 'Unauthorized' });
-    db.collections[req.params.username] = req.body;
+    const reqUser = req.params.username;
+    if (!db.users[reqUser]) return res.status(401).json({ error: 'Unauthorized' });
+
+    let incomingData = req.body;
+    incomingData.folders = incomingData.folders.filter(f => f.id !== 'f_shared');
+    incomingData.notes = incomingData.notes.filter(n => !n.isShared);
+
+    db.collections[reqUser] = incomingData;
     saveDb(db);
     res.json({ success: true });
 });

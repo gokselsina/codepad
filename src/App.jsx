@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X } from 'lucide-react';
 import EditorModule from 'react-simple-code-editor';
 const Editor = EditorModule.default || EditorModule;
 import Prism from 'prismjs';
@@ -126,10 +126,115 @@ function CategoryModal({ isOpen, onClose, onSave, initialData }) {
   );
 }
 
-function NoteCard({ note, updateNote, deleteNote }) {
+function ShareModal({ isOpen, onClose, note, updateNote, currentUser }) {
+  const [query, setQuery] = useState('');
+  const [users, setUsers] = useState([]);
+  const [sharedWith, setSharedWith] = useState([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSharedWith(note?.sharedWith ? [...note.sharedWith] : []);
+      setQuery('');
+      setUsers([]);
+    }
+  }, [isOpen, note]);
+
+  const searchUsers = async (q) => {
+    setQuery(q);
+    if (q.trim().length > 0) {
+      try {
+        const res = await fetch(`/api/users/search?q=${q}`);
+        const data = await res.json();
+        setUsers(data.users.filter(u => u !== currentUser && !sharedWith.includes(u)));
+      } catch (err) {
+        setUsers([]);
+      }
+    } else {
+      setUsers([]);
+    }
+  };
+
+  const handleAdd = (user) => {
+    setSharedWith([...sharedWith, user]);
+    setUsers(users.filter(u => u !== user));
+  };
+
+  const handleRemove = (user) => {
+    setSharedWith(sharedWith.filter(u => u !== user));
+  };
+
+  const handleSave = () => {
+    updateNote(note.id, 'sharedWith', sharedWith);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content animate-fade-in" style={{ width: '450px' }}>
+        <h3>Notu Paylaş</h3>
+
+        <div className="form-group" style={{ position: 'relative' }}>
+          <label>Kullanıcı Ara</label>
+          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '0 0.5rem' }}>
+            <Search size={16} color="var(--text-muted)" />
+            <input
+              className="form-control"
+              style={{ border: 'none', background: 'transparent', width: '100%', padding: '0.75rem 0.5rem' }}
+              value={query}
+              onChange={e => searchUsers(e.target.value)}
+              placeholder="Görmesini istediğin kullanıcının adını yaz..."
+              autoFocus
+            />
+          </div>
+          {users.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', marginTop: '0.5rem', zIndex: 10, overflow: 'hidden' }}>
+              {users.map(u => (
+                <div
+                  key={u}
+                  style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                  onClick={() => handleAdd(u)}
+                >
+                  <User size={14} style={{ marginRight: '0.5rem' }} /> {u}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="form-group" style={{ marginTop: '1.5rem' }}>
+          <label>Şu Kişilerle Paylaşılıyor:</label>
+          {sharedWith.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>Kimseyle paylaşılmıyor...</div>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {sharedWith.map(u => (
+                <div key={u} style={{ background: 'rgba(88, 166, 255, 0.1)', color: 'var(--accent-color)', padding: '0.2rem 0.6rem', borderRadius: '16px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  {u}
+                  <X size={12} style={{ cursor: 'pointer' }} onClick={() => handleRemove(u)} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="modal-actions">
+          <button className="btn btn-secondary" onClick={onClose}>İptal</button>
+          <button className="btn btn-primary" onClick={handleSave}>Kaydet</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NoteCard({ note, updateNote, deleteNote, currentUser }) {
   const blocks = note.blocks || [];
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const isReadOnly = !!note.isShared;
 
   const addBlock = (index, type) => {
+    if (isReadOnly) return;
     const newBlock = { id: Date.now().toString() + Math.random(), type, content: '' };
     const newBlocks = [...blocks];
     if (index === -1) {
@@ -141,11 +246,13 @@ function NoteCard({ note, updateNote, deleteNote }) {
   };
 
   const updateBlock = (blockId, content) => {
+    if (isReadOnly) return;
     const newBlocks = blocks.map(b => b.id === blockId ? { ...b, content } : b);
     updateNote(note.id, 'blocks', newBlocks);
   };
 
   const removeBlock = (blockId) => {
+    if (isReadOnly) return;
     const newBlocks = blocks.filter(b => b.id !== blockId);
     updateNote(note.id, 'blocks', newBlocks);
   };
@@ -159,6 +266,7 @@ function NoteCard({ note, updateNote, deleteNote }) {
   };
 
   const handlePasteCode = (e, blockId, currentContent) => {
+    if (isReadOnly) return;
     e.preventDefault();
     const pastedText = e.clipboardData.getData('text/plain');
 
@@ -183,96 +291,124 @@ function NoteCard({ note, updateNote, deleteNote }) {
   };
 
   return (
-    <div className="glass-card animate-fade-in note-editing-area">
-      <div className="note-header-actions">
-        <div style={{ flex: 1 }}>
-          <input
-            className="note-title-input"
-            value={note.title || ''}
-            onChange={(e) => updateNote(note.id, 'title', e.target.value)}
-            placeholder="Not Adı (Örn: Fetch API Kullanımı)"
-          />
-        </div>
-        <button className="btn-icon btn-danger" onClick={() => deleteNote(note.id)} title="Lütfen Sil">
-          <Trash2 size={20} />
-        </button>
-      </div>
+    <>
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        note={note}
+        updateNote={updateNote}
+        currentUser={currentUser}
+      />
 
-      <div className="blocks-container">
-        {blocks.map((block, index) => {
-          if (block.type === 'text') {
-            return (
-              <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
-                <div className="block-actions">
-                  <button className="block-btn block-btn-danger" onClick={() => removeBlock(block.id)} title="Sil">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-                <textarea
-                  className="text-block-input"
-                  value={block.content}
-                  onChange={(e) => updateBlock(block.id, e.target.value)}
-                  onInput={handleTextareaInput}
-                  placeholder="Metin ekleyin..."
-                />
-              </div>
-            );
-          } else if (block.type === 'code') {
-            return (
-              <div key={block.id} className="block-wrapper">
-                <div className="code-wrapper">
-                  <div className="code-header">
-                    <span>Kod Bloğu</span>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <button className="btn btn-primary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleCopy(block.id, block.content)}>
-                        {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
-                        {copiedBlockId === block.id ? 'Kopyalandı!' : 'Kopyala'}
-                      </button>
-                      <button className="btn-icon btn-danger" style={{ padding: '0.2rem 0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }} onClick={() => removeBlock(block.id)} title="Sil">
-                        <Trash2 size={16} />
+      <div className="glass-card animate-fade-in note-editing-area">
+        <div className="note-header-actions">
+          <div style={{ flex: 1 }}>
+            <input
+              className="note-title-input"
+              value={note.title || ''}
+              onChange={(e) => updateNote(note.id, 'title', e.target.value)}
+              placeholder="Not Adı (Örn: Fetch API Kullanımı)"
+              readOnly={isReadOnly}
+              style={{ color: isReadOnly ? 'var(--text-muted)' : '#fff' }}
+            />
+          </div>
+          {!isReadOnly && (
+            <button className="btn-icon" onClick={() => setIsShareModalOpen(true)} title="Paylaş" style={{ marginRight: '0.5rem' }}>
+              <Share2 size={20} />
+            </button>
+          )}
+          {!isReadOnly && (
+            <button className="btn-icon btn-danger" onClick={() => deleteNote(note.id)} title="Lütfen Sil">
+              <Trash2 size={20} />
+            </button>
+          )}
+        </div>
+
+        <div className="blocks-container">
+          {blocks.map((block) => {
+            if (block.type === 'text') {
+              return (
+                <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
+                  {!isReadOnly && (
+                    <div className="block-actions">
+                      <button className="block-btn block-btn-danger" onClick={() => removeBlock(block.id)} title="Sil">
+                        <Trash2 size={14} />
                       </button>
                     </div>
-                  </div>
-                  <div className="code-editor-container">
-                    <Editor
-                      value={block.content}
-                      onValueChange={(code) => updateBlock(block.id, code)}
-                      highlight={(code) => {
-                        try { return Prism.highlight(code, Prism.languages.jsx || Prism.languages.javascript, 'jsx'); }
-                        catch (e) { return code; }
-                      }}
-                      padding={16}
-                      style={{
-                        fontFamily: '"JetBrains Mono", monospace',
-                        fontSize: 14,
-                        minHeight: '100px',
-                        backgroundColor: '#1e1e1e',
-                        minWidth: '100%',
-                        width: 'max-content'
-                      }}
-                      textareaProps={{
-                        onPaste: (e) => handlePasteCode(e, block.id, block.content),
-                        placeholder: "Kodu buraya yapıştırın, otomatik formatlanacaktır..."
-                      }}
-                    />
+                  )}
+                  <textarea
+                    className="text-block-input"
+                    value={block.content}
+                    onChange={(e) => updateBlock(block.id, e.target.value)}
+                    onInput={handleTextareaInput}
+                    placeholder={isReadOnly ? "" : "Metin ekleyin..."}
+                    readOnly={isReadOnly}
+                  />
+                </div>
+              );
+            } else if (block.type === 'code') {
+              return (
+                <div key={block.id} className="block-wrapper">
+                  <div className="code-wrapper">
+                    <div className="code-header">
+                      <span>Kod Bloğu</span>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <button className="btn btn-primary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleCopy(block.id, block.content)}>
+                          {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
+                          {copiedBlockId === block.id ? 'Kopyalandı!' : 'Kopyala'}
+                        </button>
+                        {!isReadOnly && (
+                          <button className="btn-icon btn-danger" style={{ padding: '0.2rem 0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }} onClick={() => removeBlock(block.id)} title="Sil">
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="code-editor-container">
+                      <Editor
+                        value={block.content}
+                        onValueChange={(code) => updateBlock(block.id, code)}
+                        highlight={(code) => {
+                          try { return Prism.highlight(code, Prism.languages.jsx || Prism.languages.javascript, 'jsx'); }
+                          catch (e) { return code; }
+                        }}
+                        padding={16}
+                        disabled={isReadOnly}
+                        style={{
+                          fontFamily: '"JetBrains Mono", monospace',
+                          fontSize: 14,
+                          minHeight: '100px',
+                          backgroundColor: '#1e1e1e',
+                          minWidth: '100%',
+                          width: 'max-content',
+                          opacity: isReadOnly ? 0.8 : 1
+                        }}
+                        textareaProps={{
+                          onPaste: (e) => handlePasteCode(e, block.id, block.content),
+                          placeholder: isReadOnly ? "" : "Kodu buraya yapıştırın, otomatik formatlanacaktır..."
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          }
-          return null;
-        })}
-      </div>
+              );
+            }
+            return null;
+          })}
+        </div>
 
-      <div className="add-block-menu">
-        <button className="add-block-btn" onClick={() => addBlock(blocks.length - 1, 'text')}>
-          <Type size={16} /> Metin Ekle
-        </button>
-        <button className="add-block-btn" onClick={() => addBlock(blocks.length - 1, 'code')}>
-          <Code size={16} /> Kod Bloğu
-        </button>
+        {!isReadOnly && (
+          <div className="add-block-menu">
+            <button className="add-block-btn" onClick={() => addBlock(blocks.length - 1, 'text')}>
+              <Type size={16} /> Metin Ekle
+            </button>
+            <button className="add-block-btn" onClick={() => addBlock(blocks.length - 1, 'code')}>
+              <Code size={16} /> Kod Bloğu
+            </button>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }
 
@@ -289,7 +425,6 @@ function MainApp({ currentUser, onLogout }) {
 
   const initialMount = useRef(true);
 
-  // Veritabanından mevcut kullanıcı koleksiyonunu çek
   useEffect(() => {
     fetch(`/api/collection/${currentUser}`)
       .then(res => res.json())
@@ -307,7 +442,6 @@ function MainApp({ currentUser, onLogout }) {
       });
   }, [currentUser]);
 
-  // Klasörler veya notlar değiştiğinde sunucuya yaz (de-bounce without explicit timer for simplicity)
   useEffect(() => {
     if (loading) return;
     if (initialMount.current) {
@@ -330,6 +464,7 @@ function MainApp({ currentUser, onLogout }) {
   };
 
   const deleteFolder = (id) => {
+    if (id === 'f_shared') return; // Cannot delete virtual shared folder
     if (confirm('Kategoriyi silersen içindeki notlar da silinir. Onaylıyor musun?')) {
       const updatedNotes = notes.filter(n => n.folderId !== id);
       setNotes(updatedNotes);
@@ -343,11 +478,13 @@ function MainApp({ currentUser, onLogout }) {
   };
 
   const addNote = (folderId) => {
+    if (folderId === 'f_shared') return;
     const newNote = {
       id: Date.now().toString(),
       folderId,
       title: 'Yeni Not',
-      blocks: [{ id: Date.now().toString() + 'b1', type: 'text', content: '' }]
+      blocks: [{ id: Date.now().toString() + 'b1', type: 'text', content: '' }],
+      sharedWith: []
     };
     setNotes([newNote, ...notes]);
     setSelectedNoteId(newNote.id);
@@ -370,7 +507,7 @@ function MainApp({ currentUser, onLogout }) {
 
   const handleDragOver = (e, folderId) => {
     e.preventDefault();
-    if (dragOverFolderId !== folderId) setDragOverFolderId(folderId);
+    if (dragOverFolderId !== folderId && folderId !== 'f_shared') setDragOverFolderId(folderId);
   };
 
   const handleDragLeave = () => {
@@ -382,7 +519,12 @@ function MainApp({ currentUser, onLogout }) {
     setDragOverFolderId(null);
     setDraggedNoteId(null);
     const noteId = e.dataTransfer.getData('noteId');
-    if (noteId) updateNote(noteId, 'folderId', targetFolderId);
+    if (noteId && targetFolderId !== 'f_shared') {
+      const draggedNote = notes.find(n => n.id === noteId);
+      if (draggedNote && !draggedNote.isShared) {
+        updateNote(noteId, 'folderId', targetFolderId);
+      }
+    }
   };
 
   const handleDragEnd = () => {
@@ -409,7 +551,7 @@ function MainApp({ currentUser, onLogout }) {
         <header className="header animate-fade-in">
           <div>
             <h1>Codepad</h1>
-            <p>Şirket içi kod snippet'ları (Yerel Sunucu)</p>
+            <p>Şirket içi kod snippet'ları</p>
           </div>
           <div className="user-profile">
             <User size={20} color="var(--accent-color)" />
@@ -425,6 +567,7 @@ function MainApp({ currentUser, onLogout }) {
             note={selectedNote}
             updateNote={updateNote}
             deleteNote={deleteNote}
+            currentUser={currentUser}
           />
         ) : (
           <div className="empty-state animate-fade-in">
@@ -448,6 +591,7 @@ function MainApp({ currentUser, onLogout }) {
           {folders.map(folder => {
             const folderNotes = notes.filter(n => n.folderId === folder.id);
             const isDragOver = dragOverFolderId === folder.id;
+            const isSharedFolder = folder.id === 'f_shared';
 
             return (
               <div
@@ -456,24 +600,27 @@ function MainApp({ currentUser, onLogout }) {
                 onDragOver={(e) => handleDragOver(e, folder.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, folder.id)}
+                style={isSharedFolder ? { border: '1px solid rgba(255, 176, 88, 0.2)' } : {}}
               >
                 <div className="folder-header" style={{ color: folder.color }}>
                   <div className="folder-header-title">
                     {folder.name}
                   </div>
-                  <div className="folder-actions">
-                    <button className="folder-btn" title="İçine Yeni Not Ekle" onClick={() => addNote(folder.id)}>
-                      <Plus size={14} />
-                    </button>
-                    <button className="folder-btn" title="Kategoriyi Düzenle" onClick={() => { setEditingFolderId(folder.id); setIsModalOpen(true); }}>
-                      <Edit3 size={14} />
-                    </button>
-                    {folders.length > 1 && (
-                      <button className="folder-btn" title="Kategoriyi Sil" onClick={() => deleteFolder(folder.id)}>
-                        <Trash2 size={14} />
+                  {!isSharedFolder && (
+                    <div className="folder-actions">
+                      <button className="folder-btn" title="İçine Yeni Not Ekle" onClick={() => addNote(folder.id)}>
+                        <Plus size={14} />
                       </button>
-                    )}
-                  </div>
+                      <button className="folder-btn" title="Kategoriyi Düzenle" onClick={() => { setEditingFolderId(folder.id); setIsModalOpen(true); }}>
+                        <Edit3 size={14} />
+                      </button>
+                      {folders.length > 1 && (
+                        <button className="folder-btn" title="Kategoriyi Sil" onClick={() => deleteFolder(folder.id)}>
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="tree-notes-container">
@@ -485,7 +632,7 @@ function MainApp({ currentUser, onLogout }) {
                         key={n.id}
                         className={`tree-note-item ${n.id === selectedNoteId ? 'active' : ''} ${draggedNoteId === n.id ? 'dragging' : ''}`}
                         onClick={() => setSelectedNoteId(n.id)}
-                        draggable
+                        draggable={!n.isShared}
                         onDragStart={(e) => handleDragStart(e, n.id)}
                         onDragEnd={handleDragEnd}
                       >
