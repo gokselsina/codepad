@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft } from 'lucide-react';
 import EditorModule from 'react-simple-code-editor';
 const Editor = EditorModule.default || EditorModule;
 import Prism from 'prismjs';
@@ -422,6 +422,7 @@ function MainApp({ currentUser, onLogout }) {
   const [editingFolderId, setEditingFolderId] = useState(null);
   const [draggedNoteId, setDraggedNoteId] = useState(null);
   const [dragOverFolderId, setDragOverFolderId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const initialMount = useRef(true);
 
@@ -539,7 +540,7 @@ function MainApp({ currentUser, onLogout }) {
   const selectedNote = notes.find(n => n.id === selectedNoteId);
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${isSidebarOpen ? '' : 'sidebar-closed'}`}>
       <CategoryModal
         isOpen={isModalOpen}
         initialData={editingFolderId ? folders.find(f => f.id === editingFolderId) : null}
@@ -547,40 +548,12 @@ function MainApp({ currentUser, onLogout }) {
         onSave={handleSaveFolder}
       />
 
-      <main className="main-content">
-        <header className="header animate-fade-in">
-          <div>
-            <h1>Codepad</h1>
-            <p>Şirket içi kod snippet'ları</p>
-          </div>
-          <div className="user-profile">
-            <User size={20} color="var(--accent-color)" />
-            <span>{currentUser}</span>
-            <button className="btn-icon" onClick={onLogout} title="Çıkış Yap" style={{ marginLeft: '0.5rem' }}>
-              <LogOut size={16} />
-            </button>
-          </div>
-        </header>
-
-        {selectedNote ? (
-          <NoteCard
-            note={selectedNote}
-            updateNote={updateNote}
-            deleteNote={deleteNote}
-            currentUser={currentUser}
-          />
-        ) : (
-          <div className="empty-state animate-fade-in">
-            <FileCode size={48} />
-            <h2>Not Seçilmedi</h2>
-            <p style={{ marginTop: '0.5rem' }}>Görüntülemek için sağdaki menüden bir not seçin veya yeni klasörde not oluşturun.</p>
-          </div>
-        )}
-      </main>
-
-      <aside className="right-sidebar animate-fade-in">
+      <aside className={`sidebar animate-fade-in ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <h2>Kategoriler</h2>
+          <button className="btn-icon" onClick={() => setIsSidebarOpen(false)} title="Menüyü Gizle" style={{ padding: '0.25rem', border: 'transparent' }}>
+            <ChevronLeft size={20} />
+          </button>
         </div>
 
         <button className="add-category-btn" onClick={() => { setEditingFolderId(null); setIsModalOpen(true); }}>
@@ -647,6 +620,48 @@ function MainApp({ currentUser, onLogout }) {
           })}
         </div>
       </aside>
+
+      <main className="main-content">
+        <header className="header animate-fade-in">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {!isSidebarOpen && (
+              <button
+                className="btn-icon"
+                onClick={() => setIsSidebarOpen(true)}
+                title="Menüyü Göster"
+              >
+                <Menu size={24} />
+              </button>
+            )}
+            <div>
+              <h1>Codepad</h1>
+              <p>Şirket içi kod snippet'ları</p>
+            </div>
+          </div>
+          <div className="user-profile">
+            <User size={20} color="var(--accent-color)" />
+            <span>{currentUser}</span>
+            <button className="btn-icon" onClick={onLogout} title="Çıkış Yap" style={{ marginLeft: '0.5rem' }}>
+              <LogOut size={16} />
+            </button>
+          </div>
+        </header>
+
+        {selectedNote ? (
+          <NoteCard
+            note={selectedNote}
+            updateNote={updateNote}
+            deleteNote={deleteNote}
+            currentUser={currentUser}
+          />
+        ) : (
+          <div className="empty-state animate-fade-in">
+            <FileCode size={48} />
+            <h2>Not Seçilmedi</h2>
+            <p style={{ marginTop: '0.5rem' }}>Görüntülemek için menüden bir not seçin veya yeni klasörde not oluşturun.</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

@@ -168,6 +168,11 @@ textarea {
   max-width: 1600px;
   margin: 0 auto;
   width: 100%;
+  transition: gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-layout.sidebar-closed {
+  gap: 0;
 }
 
 .main-content {
@@ -224,8 +229,8 @@ textarea {
   color: #fff;
 }
 
-/* Sidebar (Sağ Menü) */
-.right-sidebar {
+/* Sidebar (Sol Menü) */
+.sidebar {
   width: 340px;
   display: flex;
   flex-direction: column;
@@ -237,7 +242,18 @@ textarea {
   padding: 1.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   height: 100%;
-  overflow-y: hidden;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.sidebar.closed {
+  width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0;
+  border: none;
+  opacity: 0;
 }
 
 .sidebar-header {
