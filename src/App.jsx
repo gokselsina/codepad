@@ -546,9 +546,11 @@ function MainApp({ currentUser, onLogout }) {
     if (folderId === 'f_shared') return;
 
     if (draggedItem?.type === 'folder' && draggedItem.id !== folderId) {
-      setDragOverItem({ id: folderId, type: 'folder' });
+      const rect = e.currentTarget.getBoundingClientRect();
+      const isBottom = e.clientY > rect.top + rect.height / 2;
+      setDragOverItem({ id: folderId, type: 'folder', isBottom });
     } else if (draggedItem?.type === 'note') {
-      setDragOverItem({ id: folderId, type: 'folder' });
+      setDragOverItem({ id: folderId, type: 'folder', isBottom: true });
     }
   };
 
@@ -559,7 +561,9 @@ function MainApp({ currentUser, onLogout }) {
     if (note?.isShared) return;
 
     if (draggedItem?.type === 'note' && draggedItem.id !== noteId) {
-      setDragOverItem({ id: noteId, type: 'note' });
+      const rect = e.currentTarget.getBoundingClientRect();
+      const isBottom = e.clientY > rect.top + rect.height / 2;
+      setDragOverItem({ id: noteId, type: 'note', isBottom });
     }
   };
 
@@ -582,7 +586,12 @@ function MainApp({ currentUser, onLogout }) {
         const newFolders = [...folders];
         const [removed] = newFolders.splice(draggedIndex, 1);
         const newTargetIndex = newFolders.findIndex(f => f.id === targetFolderId);
-        newFolders.splice(newTargetIndex >= 0 ? newTargetIndex : targetIndex, 0, removed);
+
+        const isBottom = dragOverItem?.isBottom;
+        const finalIndex = newTargetIndex >= 0 ? newTargetIndex : targetIndex;
+        const insertIndex = isBottom ? finalIndex + 1 : finalIndex;
+
+        newFolders.splice(insertIndex, 0, removed);
         setFolders(newFolders);
       }
     } else if (type === 'note') {
@@ -620,7 +629,11 @@ function MainApp({ currentUser, onLogout }) {
         removed.folderId = targetNote.folderId;
 
         const newTargetIndex = newNotes.findIndex(n => n.id === targetNoteId);
-        newNotes.splice(newTargetIndex >= 0 ? newTargetIndex : targetIndex, 0, removed);
+        const isBottom = dragOverItem?.isBottom;
+        const finalIndex = newTargetIndex >= 0 ? newTargetIndex : targetIndex;
+        const insertIndex = isBottom ? finalIndex + 1 : finalIndex;
+
+        newNotes.splice(insertIndex, 0, removed);
         setNotes(newNotes);
       }
     }
@@ -672,10 +685,16 @@ function MainApp({ currentUser, onLogout }) {
             const isSharedFolder = folder.id === 'f_shared';
             const isDraggingFolder = draggedItem?.id === folder.id && draggedItem?.type === 'folder';
 
+            let dragClass = '';
+            if (isDragOver) {
+              if (draggedItem?.type === 'note') dragClass = 'drag-over';
+              else dragClass = dragOverItem?.isBottom ? 'drag-over-bottom' : 'drag-over-top';
+            }
+
             return (
               <div
                 key={folder.id}
-                className={`tree-folder ${isDragOver ? 'drag-over' : ''} ${isDraggingFolder ? 'dragging-folder' : ''}`}
+                className={`tree-folder ${dragClass} ${isDraggingFolder ? 'dragging-folder' : ''}`}
                 draggable={!isSharedFolder}
                 onDragStart={(e) => handleFolderDragStart(e, folder.id)}
                 onDragOver={(e) => handleFolderDragOver(e, folder.id)}
@@ -712,10 +731,16 @@ function MainApp({ currentUser, onLogout }) {
                     folderNotes.map(n => {
                       const isNoteDragOver = dragOverItem?.id === n.id && dragOverItem?.type === 'note';
                       const isNoteDragging = draggedItem?.id === n.id && draggedItem?.type === 'note';
+
+                      let dragNoteClass = '';
+                      if (isNoteDragOver) {
+                        dragNoteClass = dragOverItem?.isBottom ? 'drag-over-bottom' : 'drag-over-top';
+                      }
+
                       return (
                         <div
                           key={n.id}
-                          className={`tree-note-item ${n.id === selectedNoteId ? 'active' : ''} ${isNoteDragging ? 'dragging' : ''} ${isNoteDragOver ? 'drag-over-note' : ''}`}
+                          className={`tree-note-item ${n.id === selectedNoteId ? 'active' : ''} ${isNoteDragging ? 'dragging' : ''} ${dragNoteClass}`}
                           onClick={() => setSelectedNoteId(n.id)}
                           draggable={!n.isShared}
                           onDragStart={(e) => handleNoteDragStart(e, n.id)}
