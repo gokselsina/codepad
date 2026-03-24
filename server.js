@@ -300,6 +300,24 @@ app.post('/api/teams/:teamId/members', async (req, res) => {
     }
 });
 
+app.delete('/api/teams/:teamId/members/:username', async (req, res) => {
+    const { teamId, username } = req.params;
+    const { actor } = req.body;
+
+    try {
+        const team = await db.get('SELECT owner FROM teams WHERE id = ?', [teamId]);
+        if (!team) return res.status(404).json({ error: 'Ekip bulunamadı' });
+        if (team.owner !== actor) return res.status(403).json({ error: 'Sadece ekip sahibi üye çıkarabilir' });
+        if (team.owner === username) return res.status(400).json({ error: 'Ekip sahibi kendini çıkaramaz' });
+
+        await db.run('DELETE FROM team_members WHERE team_id = ? AND username = ?', [teamId, username]);
+        const members = await db.all('SELECT username FROM team_members WHERE team_id = ?', [teamId]);
+        res.json({ success: true, team: { ...team, members: members.map(m => m.username) } });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 app.get('/api/teams/collection/:teamId', async (req, res) => {
     const teamId = req.params.teamId;
 

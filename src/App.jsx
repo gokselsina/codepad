@@ -489,6 +489,7 @@ function MainApp({ currentUser, onLogout }) {
 
   const [workspace, setWorkspace] = useState({ type: 'personal', id: currentUser });
   const [userTeams, setUserTeams] = useState([]);
+  const [isManageTeamModalOpen, setIsManageTeamModalOpen] = useState(false);
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
   const [isAddTeamMemberModalOpen, setIsAddTeamMemberModalOpen] = useState(false);
   const [teamNameForm, setTeamNameForm] = useState('');
@@ -812,6 +813,42 @@ function MainApp({ currentUser, onLogout }) {
         </div>
       )}
 
+      {isManageTeamModalOpen && workspace.type === 'team' && (
+        <div className="modal-overlay" onClick={() => setIsManageTeamModalOpen(false)}>
+          <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
+            <h3>Ekip Üyelerini Yönet</h3>
+            <div style={{ maxHeight: '250px', overflowY: 'auto', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid var(--card-border)', marginTop: '1rem', display: 'flex', flexDirection: 'column' }}>
+              {(userTeams.find(t => t.id === workspace.id)?.members || []).map(member => (
+                <div key={member} style={{ padding: '0.6rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Users size={16} color="var(--accent-color)" /> {member}
+                    {userTeams.find(t => t.id === workspace.id)?.owner === member && <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.1)', padding: '0.1rem 0.3rem', borderRadius: '4px', marginLeft: '0.5rem' }}>Sahip</span>}
+                  </div>
+                  {member !== currentUser && currentUser === userTeams.find(t => t.id === workspace.id)?.owner && (
+                    <button className="btn-icon btn-danger" title="Üyeyi Çıkar" onClick={() => {
+                      if (window.confirm(`${member} adlı kullanıcıyı ekipten çıkarmak istediğinize emin misiniz?`)) {
+                        fetch(`/api/teams/${workspace.id}/members/${member}`, {
+                          method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ actor: currentUser })
+                        }).then(r => r.json()).then(res => {
+                          fetchTeams();
+                          if (res.error) alert(res.error);
+                        });
+                      }
+                    }} style={{ padding: '0.3rem', border: 'none', background: 'rgba(239, 68, 68, 0.2)' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="modal-actions" style={{ marginTop: '1rem' }}>
+              <button className="btn btn-secondary" onClick={() => setIsManageTeamModalOpen(false)}>Kapat</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className={`sidebar animate-fade-in ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -840,10 +877,15 @@ function MainApp({ currentUser, onLogout }) {
             </select>
             {workspace.type === 'team' && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <span>Üyeler: {userTeams.find(t => t.id === workspace.id)?.members?.length} kişi</span>
-                <button className="btn-icon" onClick={() => setIsAddTeamMemberModalOpen(true)} title="Ekibe Üye Ekle" style={{ padding: '0.2rem', background: 'rgba(59, 130, 246, 0.2)' }}>
-                  <UserPlus size={14} color="var(--accent-color)" />
-                </button>
+                <span>Üyeler: {userTeams.find(t => t.id === workspace.id)?.members?.length || 0} kişi</span>
+                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                  <button className="btn-icon" onClick={() => setIsManageTeamModalOpen(true)} title="Üyeleri Yönet" style={{ padding: '0.2rem', background: 'rgba(255, 255, 255, 0.05)' }}>
+                    <Users size={14} />
+                  </button>
+                  <button className="btn-icon" onClick={() => setIsAddTeamMemberModalOpen(true)} title="Ekibe Üye Ekle" style={{ padding: '0.2rem', background: 'rgba(59, 130, 246, 0.2)' }}>
+                    <UserPlus size={14} color="var(--accent-color)" />
+                  </button>
+                </div>
               </div>
             )}
           </div>
