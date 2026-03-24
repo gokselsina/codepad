@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"vite\" \"node server.js\"",
     "build": "vite build",
+    "deploy": "git pull && npm install && npm run build && pm2 restart all",
     "lint": "eslint .",
     "preview": "vite preview"
   },
