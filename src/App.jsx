@@ -327,8 +327,8 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
             <div className="top-add-trigger">
               <div className="inline-add-container">
                 <div className="inline-add-actions">
-                  <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin Yukarı Ekle</button>
-                  <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod Yukarı Ekle</button>
+                  <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin</button>
+                  <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod</button>
                 </div>
               </div>
             </div>
@@ -421,12 +421,12 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
           })}
         </div>
 
-        {!isReadOnly && (
+        {!isReadOnly && blocks.length === 0 && (
           <div className="add-block-menu">
-            <button className="add-block-btn" onClick={() => addBlock(blocks.length - 1, 'text')}>
+            <button className="add-block-btn" onClick={() => addBlock(-1, 'text')}>
               <Type size={16} /> Metin Ekle
             </button>
-            <button className="add-block-btn" onClick={() => addBlock(blocks.length - 1, 'code')}>
+            <button className="add-block-btn" onClick={() => addBlock(-1, 'code')}>
               <Code size={16} /> Kod Bloğu
             </button>
           </div>
