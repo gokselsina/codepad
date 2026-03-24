@@ -885,6 +885,21 @@ textarea {
   background-color: var(--success-color);
   color: #fff;
   border-color: transparent;
+  animation: copiedBounce 0.2s ease-out;
+}
+
+@keyframes copiedBounce {
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .btn-success:hover {

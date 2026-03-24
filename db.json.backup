@@ -1,0 +1,62 @@
+{
+  "users": {
+    "gokselsina": "12345",
+    "gokselsina2": "12345",
+    "4gokselsina": "bed7ce1b2b33232499c93d2fa9f2a1c2:dbcbe15a58eaaf85474435ed6db311635187d2e8ef005771a14e1edbd2f0a8d9b302eb30350009eac64b9bc19d4b9b44e49753188834744930ef7f606928af3c"
+  },
+  "collections": {
+    "gokselsina": {
+      "folders": [
+        {
+          "id": "f_general_1774288409308",
+          "name": "Genel",
+          "color": "#58a6ff"
+        },
+        {
+          "id": "f_1774288414334",
+          "name": "tester",
+          "color": "#58a6ff"
+        }
+      ],
+      "notes": [
+        {
+          "id": "1774288416035",
+          "folderId": "f_1774288414334",
+          "title": "Yeni Not",
+          "blocks": [
+            {
+              "id": "1774288416035b1",
+              "type": "text",
+              "content": ""
+            },
+            {
+              "id": "17742884180180.5927108006775291",
+              "type": "code",
+              "content": "select wow from dual"
+            }
+          ]
+        }
+      ]
+    },
+    "gokselsina2": {
+      "folders": [
+        {
+          "id": "f_general_1774288510379",
+          "name": "Genel",
+          "color": "#58a6ff"
+        }
+      ],
+      "notes": []
+    },
+    "4gokselsina": {
+      "folders": [
+        {
+          "id": "f_general_1774288528889",
+          "name": "Genel",
+          "color": "#58a6ff"
+        }
+      ],
+      "notes": []
+    }
+  }
+}
