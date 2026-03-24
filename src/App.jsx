@@ -603,9 +603,20 @@ function Spotlight({ isOpen, onClose, folders, notes, teams, onSelect }) {
     const allTeams = teams.map(t => ({ ...t, spotlightType: 'team', meta: 'Ekip', title: t.name }));
 
     const searchPool = [...allNotes, ...allFolders, ...allTeams];
-    const filtered = searchPool.filter(item =>
-      (item.title || '').toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 10);
+    const filtered = searchPool.filter(item => {
+      const q = query.toLowerCase();
+      if (!q) return false;
+      const titleMatch = (item.title || '').toLowerCase().includes(q);
+
+      if (item.spotlightType === 'note') {
+        const contentMatch = (item.blocks || []).some(b => (b.content || '').toLowerCase().includes(q));
+        if (contentMatch && !titleMatch) {
+          item.matchedInContent = true;
+        }
+        return titleMatch || contentMatch;
+      }
+      return titleMatch;
+    }).slice(0, 10);
 
     setResults(filtered);
     setActiveIndex(0);
@@ -650,7 +661,10 @@ function Spotlight({ isOpen, onClose, folders, notes, teams, onSelect }) {
             >
               {item.spotlightType === 'note' ? <FileCode size={18} /> : item.spotlightType === 'folder' ? <FileType2 size={18} /> : <Users size={18} />}
               <div className="spotlight-item-text">
-                <span className="spotlight-item-title">{item.title || 'İsimsiz'}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span className="spotlight-item-title">{item.title || 'İsimsiz'}</span>
+                  {item.matchedInContent && <span style={{ fontSize: '0.6rem', padding: '1px 4px', background: 'rgba(59, 130, 246, 0.2)', color: 'var(--accent-color)', borderRadius: '4px' }}>İçerikte eşleşti</span>}
+                </div>
                 <span className="spotlight-item-meta">{item.meta || ''}</span>
               </div>
             </div>
