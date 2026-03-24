@@ -588,6 +588,87 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
   );
 }
 
+function Spotlight({ isOpen, onClose, folders, notes, teams, onSelect }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setQuery('');
+      return;
+    }
+    const allNotes = notes.map(n => ({ ...n, spotlightType: 'note', meta: folders.find(f => f.id === n.folderId)?.name }));
+    const allFolders = folders.map(f => ({ ...f, spotlightType: 'folder', meta: 'Klasör', title: f.name }));
+    const allTeams = teams.map(t => ({ ...t, spotlightType: 'team', meta: 'Ekip', title: t.name }));
+
+    const searchPool = [...allNotes, ...allFolders, ...allTeams];
+    const filtered = searchPool.filter(item =>
+      (item.title || '').toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 10);
+
+    setResults(filtered);
+    setActiveIndex(0);
+  }, [query, isOpen, notes, folders, teams]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(prev => (results.length > 0 ? (prev + 1) % results.length : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(prev => (results.length > 0 ? (prev - 1 + results.length) % results.length : 0));
+    } else if (e.key === 'Enter' && results[activeIndex]) {
+      onSelect(results[activeIndex]);
+    } else if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="spotlight-overlay" onClick={onClose}>
+      <div className="spotlight-content" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown}>
+        <div className="spotlight-input-wrapper">
+          <Search size={22} color="var(--accent-color)" />
+          <input
+            className="spotlight-input"
+            placeholder="Ne aramıştınız? (Not, Klasör, Ekip...)"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            autoFocus
+          />
+        </div>
+        <div className="spotlight-results">
+          {results.map((item, idx) => (
+            <div
+              key={item.id}
+              className={`spotlight-item ${idx === activeIndex ? 'active' : ''}`}
+              onClick={() => onSelect(item)}
+              onMouseEnter={() => setActiveIndex(idx)}
+            >
+              {item.spotlightType === 'note' ? <FileCode size={18} /> : item.spotlightType === 'folder' ? <FileType2 size={18} /> : <Users size={18} />}
+              <div className="spotlight-item-text">
+                <span className="spotlight-item-title">{item.title || 'İsimsiz'}</span>
+                <span className="spotlight-item-meta">{item.meta || ''}</span>
+              </div>
+            </div>
+          ))}
+          {results.length === 0 && (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Eşleşen sonuç bulunamadı...</div>
+          )}
+        </div>
+        <div className="spotlight-kbd-hint">
+          <span className="kbd-pill">⏎ Seç</span>
+          <span className="kbd-pill">↑↓ Gezin</span>
+          <span className="kbd-pill">Esc Kapat</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MainApp({ currentUser, onLogout }) {
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -610,6 +691,37 @@ function MainApp({ currentUser, onLogout }) {
   const [teamMemberSearchResults, setTeamMemberSearchResults] = useState([]);
   const [isPartyRoomActive, setIsPartyRoomActive] = useState(false);
   const [partyNote, setPartyNote] = useState(null);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+
+  useEffect(() => {
+    const handleGlobalKbd = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSpotlightOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKbd);
+    return () => window.removeEventListener('keydown', handleGlobalKbd);
+  }, []);
+
+  const handleSpotlightSelect = (item) => {
+    setIsSpotlightOpen(false);
+    if (item.spotlightType === 'note') {
+      // If note is in a team, switch workspace
+      if (item.team_id) {
+        const team = userTeams.find(t => t.id === item.team_id);
+        setWorkspace({ type: 'team', id: item.team_id, name: team?.name });
+      } else {
+        setWorkspace({ type: 'personal', id: currentUser });
+      }
+      setSelectedNoteId(item.id);
+      setIsPartyRoomActive(false);
+    } else if (item.spotlightType === 'team') {
+      setWorkspace({ type: 'team', id: item.id, name: item.name });
+      setSelectedNoteId(null);
+      setIsPartyRoomActive(false);
+    }
+  };
 
   useEffect(() => {
     setIsPartyRoomActive(false);
@@ -1196,6 +1308,14 @@ function MainApp({ currentUser, onLogout }) {
           </div>
         )}
       </main>
+      <Spotlight
+        isOpen={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
+        folders={folders}
+        notes={notes}
+        teams={userTeams}
+        onSelect={handleSpotlightSelect}
+      />
     </div>
   );
 }
