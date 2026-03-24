@@ -331,6 +331,14 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
             if (block.type === 'text') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
+                  {!isReadOnly && index === 0 && (
+                    <div className="inline-add-container">
+                      <div className="inline-add-actions">
+                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin Yukarı Ekle</button>
+                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod Yukarı Ekle</button>
+                      </div>
+                    </div>
+                  )}
                   {!isReadOnly && (
                     <div className="block-actions">
                       <button className="block-btn block-btn-danger" onClick={() => removeBlock(block.id)} title="Sil">
@@ -359,6 +367,14 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
             } else if (block.type === 'code') {
               return (
                 <div key={block.id} className="block-wrapper">
+                  {!isReadOnly && index === 0 && (
+                    <div className="inline-add-container">
+                      <div className="inline-add-actions">
+                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin Yukarı Ekle</button>
+                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod Yukarı Ekle</button>
+                      </div>
+                    </div>
+                  )}
                   <div className="code-wrapper">
                     <div className="code-header">
                       <span>Kod Bloğu</span>
