@@ -457,6 +457,17 @@ textarea {
   opacity: 0.5;
 }
 
+.tree-note-item.drag-over-note {
+  border-bottom: 2px solid var(--accent-color);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.tree-folder.dragging-folder {
+  opacity: 0.5;
+}
+
 /* Glass Card for Main Editor */
 .glass-card {
   background: var(--card-bg);
