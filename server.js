@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,18 +14,115 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-const dbPath = path.join(__dirname, 'db.json');
+const dbPath = path.join(__dirname, 'codepad.sqlite');
+let db;
 
-if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify({ users: {}, collections: {}, teams: {}, teamCollections: {} }, null, 2), 'utf8');
-}
+async function setupDatabase() {
+    db = await open({
+        filename: dbPath,
+        driver: sqlite3.Database
+    });
 
-function getDb() {
-    return JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-}
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password_hash TEXT
+        );
+        CREATE TABLE IF NOT EXISTS teams (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            owner TEXT
+        );
+        CREATE TABLE IF NOT EXISTS team_members (
+            team_id TEXT,
+            username TEXT,
+            PRIMARY KEY (team_id, username)
+        );
+        CREATE TABLE IF NOT EXISTS folders (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            color TEXT,
+            user_id TEXT,
+            team_id TEXT,
+            sort_order INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS notes (
+            id TEXT PRIMARY KEY,
+            folder_id TEXT,
+            user_id TEXT,
+            team_id TEXT,
+            title TEXT,
+            blocks TEXT,
+            shared_with TEXT,
+            sort_order INTEGER
+        );
+    `);
 
-function saveDb(data) {
-    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), 'utf8');
+    // Migration Script
+    const jsonPath = path.join(__dirname, 'db.json');
+    if (fs.existsSync(jsonPath)) {
+        try {
+            console.log("Migrating db.json to SQLite...");
+            const data = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+            await db.run('BEGIN TRANSACTION');
+
+            // Migrate users
+            if (data.users) {
+                for (const [username, hash] of Object.entries(data.users)) {
+                    await db.run('INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)', [username, hash]);
+                }
+            }
+
+            // Migrate collections
+            if (data.collections) {
+                for (const [username, coll] of Object.entries(data.collections)) {
+                    let fOrder = 0;
+                    for (const f of coll.folders || []) {
+                        await db.run('INSERT OR REPLACE INTO folders (id, name, color, user_id, sort_order) VALUES (?, ?, ?, ?, ?)', [f.id, f.name, f.color, username, fOrder++]);
+                    }
+                    let nOrder = 0;
+                    for (const n of coll.notes || []) {
+                        await db.run('INSERT OR REPLACE INTO notes (id, folder_id, user_id, title, blocks, shared_with, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                            [n.id, n.folderId, username, n.title, JSON.stringify(n.blocks || []), JSON.stringify(n.sharedWith || []), nOrder++]);
+                    }
+                }
+            }
+
+            // Migrate teams
+            if (data.teams) {
+                for (const [teamId, t] of Object.entries(data.teams)) {
+                    await db.run('INSERT OR IGNORE INTO teams (id, name, owner) VALUES (?, ?, ?)', [teamId, t.name, t.owner]);
+                    for (const member of t.members || []) {
+                        await db.run('INSERT OR IGNORE INTO team_members (team_id, username) VALUES (?, ?)', [teamId, member]);
+                    }
+                }
+            }
+
+            // Migrate team collections
+            if (data.teamCollections) {
+                for (const [teamId, coll] of Object.entries(data.teamCollections)) {
+                    let fOrder = 0;
+                    for (const f of coll.folders || []) {
+                        await db.run('INSERT OR REPLACE INTO folders (id, name, color, team_id, sort_order) VALUES (?, ?, ?, ?, ?)', [f.id, f.name, f.color, teamId, fOrder++]);
+                    }
+                    let nOrder = 0;
+                    for (const n of coll.notes || []) {
+                        await db.run('INSERT OR REPLACE INTO notes (id, folder_id, team_id, title, blocks, shared_with, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                            [n.id, n.folderId, teamId, n.title, JSON.stringify(n.blocks || []), JSON.stringify(n.sharedWith || []), nOrder++]);
+                    }
+                }
+            }
+
+            await db.run('COMMIT');
+
+            fs.renameSync(jsonPath, path.join(__dirname, 'db.json.backup'));
+            console.log("Migration successful!");
+        } catch (e) {
+            await db.run('ROLLBACK');
+            console.error("Migration failed:", e);
+        }
+    }
 }
 
 function hashPassword(password) {
@@ -34,146 +133,214 @@ function hashPassword(password) {
 
 function verifyPassword(password, storedHash) {
     if (!storedHash || !storedHash.includes(':')) {
-        return password === storedHash; // Plain text fallback for strictly old accounts
+        return password === storedHash;
     }
     const [salt, key] = storedHash.split(':');
     const hash = crypto.scryptSync(password, salt, 64).toString('hex');
     return hash === key;
 }
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Kullanıcı adı ve şifre zorunlu' });
 
-    const db = getDb();
-    if (db.users[username]) return res.status(400).json({ error: 'Bu kullanıcı adı zaten alınmış.' });
+    const existing = await db.get('SELECT username FROM users WHERE username = ?', [username]);
+    if (existing) return res.status(400).json({ error: 'Bu kullanıcı adı zaten alınmış.' });
 
-    db.users[username] = hashPassword(password);
-    db.collections[username] = {
-        folders: [{ id: 'f_general_' + Date.now(), name: 'Genel', color: '#58a6ff' }],
-        notes: []
-    };
-    saveDb(db);
+    const hash = hashPassword(password);
+    await db.run('INSERT INTO users (username, password_hash) VALUES (?, ?)', [username, hash]);
+
+    await db.run('INSERT INTO folders (id, name, color, user_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+        ['f_general_' + Date.now(), 'Genel', '#58a6ff', username, 0]);
+
     res.json({ success: true });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { username, password } = req.body;
-    const db = getDb();
+    const user = await db.get('SELECT password_hash FROM users WHERE username = ?', [username]);
 
-    if (db.users[username] && verifyPassword(password, db.users[username])) {
+    if (user && verifyPassword(password, user.password_hash)) {
         res.json({ success: true });
     } else {
         res.status(401).json({ error: 'Geçersiz kullanıcı adı veya şifre.' });
     }
 });
 
-app.get('/api/users/search', (req, res) => {
+app.get('/api/users/search', async (req, res) => {
     const q = (req.query.q || '').toLowerCase();
-    const db = getDb();
-    const matches = Object.keys(db.users).filter(u => u.toLowerCase().includes(q)).slice(0, 10);
-    res.json({ users: matches });
+    const rows = await db.all('SELECT username FROM users WHERE LOWER(username) LIKE ? LIMIT 10', [`%${q}%`]);
+    res.json({ users: rows.map(r => r.username) });
 });
 
-app.get('/api/collection/:username', (req, res) => {
-    const db = getDb();
+app.get('/api/collection/:username', async (req, res) => {
     const reqUser = req.params.username;
-    let coll = db.collections[reqUser] ? JSON.parse(JSON.stringify(db.collections[reqUser])) : { folders: [], notes: [] };
 
-    const sharedNotes = [];
-    for (const [owner, data] of Object.entries(db.collections)) {
-        if (owner === reqUser) continue;
-        data.notes.forEach(n => {
-            if (n.sharedWith && n.sharedWith.includes(reqUser)) {
-                sharedNotes.push({
-                    ...n,
-                    isShared: true,
-                    owner: owner,
-                    folderId: 'f_shared',
-                    title: `${n.title} (Gönderen: ${owner})`
-                });
-            }
+    const folders = await db.all('SELECT id, name, color FROM folders WHERE user_id = ? ORDER BY sort_order', [reqUser]);
+    const notesRaw = await db.all('SELECT id, folder_id as folderId, title, blocks, shared_with as sharedWith FROM notes WHERE user_id = ? ORDER BY sort_order', [reqUser]);
+
+    const notes = notesRaw.map(n => ({
+        ...n,
+        blocks: JSON.parse(n.blocks || '[]'),
+        sharedWith: JSON.parse(n.sharedWith || '[]')
+    }));
+
+    const sharedNotesRaw = await db.all('SELECT id, title, blocks, shared_with as sharedWith, user_id as owner FROM notes WHERE shared_with LIKE ?', [`%"${reqUser}"%`]);
+
+    if (sharedNotesRaw.length > 0) {
+        sharedNotesRaw.forEach(n => {
+            notes.push({
+                ...n,
+                isShared: true,
+                folderId: 'f_shared',
+                title: `${n.title} (Gönderen: ${n.owner})`,
+                blocks: JSON.parse(n.blocks || '[]'),
+                sharedWith: JSON.parse(n.sharedWith || '[]')
+            });
         });
-    }
 
-    if (sharedNotes.length > 0) {
-        coll.notes = [...(coll.notes || []), ...sharedNotes];
-        if (!coll.folders.find(f => f.id === 'f_shared')) {
-            coll.folders.push({ id: 'f_shared', name: 'Paylaşılan Notlar 🤝', color: '#ffb058' });
+        if (!folders.find(f => f.id === 'f_shared')) {
+            folders.push({ id: 'f_shared', name: 'Paylaşılan Notlar 🤝', color: '#ffb058' });
         }
     }
 
-    res.json(coll);
+    res.json({ folders, notes });
 });
 
-app.post('/api/collection/:username', (req, res) => {
-    const db = getDb();
+app.post('/api/collection/:username', async (req, res) => {
     const reqUser = req.params.username;
-    if (!db.users[reqUser]) return res.status(401).json({ error: 'Unauthorized' });
 
-    let incomingData = req.body;
-    incomingData.folders = incomingData.folders.filter(f => f.id !== 'f_shared');
-    incomingData.notes = incomingData.notes.filter(n => !n.isShared);
+    const user = await db.get('SELECT username FROM users WHERE username = ?', [reqUser]);
+    if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-    db.collections[reqUser] = incomingData;
-    saveDb(db);
-    res.json({ success: true });
+    let { folders, notes } = req.body;
+    folders = folders.filter(f => f.id !== 'f_shared');
+    notes = notes.filter(n => !n.isShared);
+
+    await db.run('BEGIN TRANSACTION');
+    try {
+        await db.run('DELETE FROM folders WHERE user_id = ?', [reqUser]);
+        await db.run('DELETE FROM notes WHERE user_id = ?', [reqUser]);
+
+        let fOrder = 0;
+        for (const f of folders) {
+            await db.run('INSERT INTO folders (id, name, color, user_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+                [f.id, f.name, f.color, reqUser, fOrder++]);
+        }
+
+        let nOrder = 0;
+        for (const n of notes) {
+            await db.run('INSERT INTO notes (id, folder_id, user_id, title, blocks, shared_with, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [n.id, n.folderId || null, reqUser, n.title, JSON.stringify(n.blocks || []), JSON.stringify(n.sharedWith || []), nOrder++]);
+        }
+        await db.run('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await db.run('ROLLBACK');
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // --- TEAMS API ---
-app.get('/api/teams/:username', (req, res) => {
-    const db = getDb();
-    if (!db.teams) { db.teams = {}; saveDb(db); }
+app.get('/api/teams/:username', async (req, res) => {
     const username = req.params.username;
-    const userTeams = Object.values(db.teams).filter(t => t.members && t.members.includes(username));
-    res.json(userTeams);
+    const rows = await db.all(`
+        SELECT t.id, t.name, t.owner
+        FROM teams t
+        JOIN team_members tm ON t.id = tm.team_id
+        WHERE tm.username = ?
+    `, [username]);
+
+    const teams = [];
+    for (const r of rows) {
+        const members = await db.all('SELECT username FROM team_members WHERE team_id = ?', [r.id]);
+        teams.push({
+            ...r,
+            members: members.map(m => m.username)
+        });
+    }
+
+    res.json(teams);
 });
 
-app.post('/api/teams', (req, res) => {
+app.post('/api/teams', async (req, res) => {
     const { name, owner } = req.body;
-    const db = getDb();
-    if (!db.teams) db.teams = {};
-    if (!db.teamCollections) db.teamCollections = {};
     const teamId = 't_' + Date.now();
-    const newTeam = { id: teamId, name, owner, members: [owner] };
-    db.teams[teamId] = newTeam;
-    db.teamCollections[teamId] = {
-        folders: [{ id: 'tf_gen_' + Date.now(), name: 'Ekip Genel', color: '#10B981' }],
-        notes: []
-    };
-    saveDb(db);
-    res.json(newTeam);
-});
 
-app.post('/api/teams/:teamId/members', (req, res) => {
-    const { memberUsername } = req.body;
-    const teamId = req.params.teamId;
-    const db = getDb();
-    if (db.teams && db.teams[teamId]) {
-        if (!db.teams[teamId].members.includes(memberUsername)) {
-            db.teams[teamId].members.push(memberUsername);
-            saveDb(db);
-        }
-        res.json({ success: true, team: db.teams[teamId] });
-    } else {
-        res.status(404).json({ error: 'Ekip bulunamadı' });
+    await db.run('BEGIN TRANSACTION');
+    try {
+        await db.run('INSERT INTO teams (id, name, owner) VALUES (?, ?, ?)', [teamId, name, owner]);
+        await db.run('INSERT INTO team_members (team_id, username) VALUES (?, ?)', [teamId, owner]);
+        await db.run('INSERT INTO folders (id, name, color, team_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+            ['tf_gen_' + Date.now(), 'Ekip Genel', '#10B981', teamId, 0]);
+        await db.run('COMMIT');
+        const newTeam = { id: teamId, name, owner, members: [owner] };
+        res.json(newTeam);
+    } catch (e) {
+        await db.run('ROLLBACK');
+        res.status(500).json({ error: e.message });
     }
 });
 
-app.get('/api/teams/collection/:teamId', (req, res) => {
-    const db = getDb();
+app.post('/api/teams/:teamId/members', async (req, res) => {
+    const { memberUsername } = req.body;
     const teamId = req.params.teamId;
-    const coll = db.teamCollections && db.teamCollections[teamId] ? db.teamCollections[teamId] : { folders: [], notes: [] };
-    res.json(coll);
+
+    try {
+        await db.run('INSERT OR IGNORE INTO team_members (team_id, username) VALUES (?, ?)', [teamId, memberUsername]);
+        const team = await db.get('SELECT id, name, owner FROM teams WHERE id = ?', [teamId]);
+        if (team) {
+            const members = await db.all('SELECT username FROM team_members WHERE team_id = ?', [teamId]);
+            res.json({ success: true, team: { ...team, members: members.map(m => m.username) } });
+        } else {
+            res.status(404).json({ error: 'Ekip bulunamadı' });
+        }
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
-app.post('/api/teams/collection/:teamId', (req, res) => {
-    const db = getDb();
+app.get('/api/teams/collection/:teamId', async (req, res) => {
     const teamId = req.params.teamId;
-    if (!db.teamCollections) db.teamCollections = {};
-    db.teamCollections[teamId] = req.body;
-    saveDb(db);
-    res.json({ success: true });
+
+    const folders = await db.all('SELECT id, name, color FROM folders WHERE team_id = ? ORDER BY sort_order', [teamId]);
+    const notesRaw = await db.all('SELECT id, folder_id as folderId, title, blocks, shared_with as sharedWith FROM notes WHERE team_id = ? ORDER BY sort_order', [teamId]);
+
+    const notes = notesRaw.map(n => ({
+        ...n,
+        blocks: JSON.parse(n.blocks || '[]'),
+        sharedWith: JSON.parse(n.sharedWith || '[]')
+    }));
+
+    res.json({ folders, notes });
+});
+
+app.post('/api/teams/collection/:teamId', async (req, res) => {
+    const teamId = req.params.teamId;
+    let { folders, notes } = req.body;
+
+    await db.run('BEGIN TRANSACTION');
+    try {
+        await db.run('DELETE FROM folders WHERE team_id = ?', [teamId]);
+        await db.run('DELETE FROM notes WHERE team_id = ?', [teamId]);
+
+        let fOrder = 0;
+        for (const f of folders) {
+            await db.run('INSERT INTO folders (id, name, color, team_id, sort_order) VALUES (?, ?, ?, ?, ?)',
+                [f.id, f.name, f.color, teamId, fOrder++]);
+        }
+
+        let nOrder = 0;
+        for (const n of notes) {
+            await db.run('INSERT INTO notes (id, folder_id, team_id, title, blocks, shared_with, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [n.id, n.folderId || null, teamId, n.title, JSON.stringify(n.blocks || []), JSON.stringify(n.sharedWith || []), nOrder++]);
+        }
+        await db.run('COMMIT');
+        res.json({ success: true });
+    } catch (e) {
+        await db.run('ROLLBACK');
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // Serve frontend static files
@@ -189,6 +356,9 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Kod Defteri API ve Sunucu port ${PORT} üzerinde başlatıldı.`);
-});
+
+setupDatabase().then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Kod Defteri API ve (SQLite) Sunucu port ${PORT} üzerinde başlatıldı.`);
+    });
+}).catch(console.error);
