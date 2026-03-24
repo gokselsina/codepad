@@ -47,6 +47,8 @@ function AuthScreen({ onLogin }) {
 
   return (
     <div className="auth-container animate-fade-in">
+      <div className="auth-glow-1"></div>
+      <div className="auth-glow-2"></div>
       <div className="auth-card">
         <div className="auth-header">
           <h1>Codepad</h1>
@@ -344,6 +346,14 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                     placeholder={isReadOnly ? "" : "Metin ekleyin..."}
                     readOnly={isReadOnly}
                   />
+                  {!isReadOnly && (
+                    <div className="inline-add-container">
+                      <div className="inline-add-actions">
+                        <button className="inline-add-btn" onClick={() => addBlock(index, 'text')}><Type size={14} /> Metin</button>
+                        <button className="inline-add-btn" onClick={() => addBlock(index, 'code')}><Code size={14} /> Kod</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             } else if (block.type === 'code') {
@@ -390,6 +400,14 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                       />
                     </div>
                   </div>
+                  {!isReadOnly && (
+                    <div className="inline-add-container">
+                      <div className="inline-add-actions">
+                        <button className="inline-add-btn" onClick={() => addBlock(index, 'text')}><Type size={14} /> Metin</button>
+                        <button className="inline-add-btn" onClick={() => addBlock(index, 'code')}><Code size={14} /> Kod</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             }
