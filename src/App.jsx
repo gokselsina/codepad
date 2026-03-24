@@ -236,11 +236,27 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(false);
   const [confirmDeleteBlockId, setConfirmDeleteBlockId] = useState(null);
-  const [isPartyMode, setIsPartyMode] = useState(isForcedParty || false);
+  const [isPartyMode, setIsPartyMode] = useState(isForcedParty || workspace.type === 'team');
   const [remoteCursors, setRemoteCursors] = useState({}); // { socketId: { username, color, blockId, offset } }
 
   const socketRef = useRef(null);
   const isReadOnly = !!note.isShared;
+
+  // Helper to calculate X/Y for monospace editors
+  const calculateCursorPos = (content, offset, isCode) => {
+    const lines = content.slice(0, offset).split('\n');
+    const row = lines.length - 1;
+    const col = lines[row].length;
+    const lineHeight = isCode ? 21 : 26; // Approx heights
+    const charWidth = isCode ? 8.4 : 9.5; // Approx widths
+    const paddingLeft = isCode ? 68 : 8; // Margin + padding offsets
+    const paddingTop = isCode ? 60 : 8; // Header + padding offsets
+
+    return {
+      top: row * lineHeight + paddingTop,
+      left: col * charWidth + paddingLeft
+    };
+  };
 
   useEffect(() => {
     if (isPartyMode && workspace.type === 'team') {
@@ -378,16 +394,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
               <Share2 size={20} />
             </button>
           )}
-          {workspace.type === 'team' && (
-            <button
-              className={`btn ${isPartyMode ? 'btn-success' : 'btn-secondary'}`}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--card-border)', marginRight: '0.5rem' }}
-              onClick={() => setIsPartyMode(!isPartyMode)}
-            >
-              <Sparkles size={18} className={isPartyMode ? 'animate-spin' : ''} />
-              {isPartyMode ? 'Parti Modu: AÇIK' : 'Parti Modu'}
-            </button>
-          )}
           {!isReadOnly && (
             <button
               className="btn-icon btn-danger"
@@ -423,17 +429,21 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
             if (block.type === 'text') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem', position: 'relative' }}>
-                  {Object.entries(remoteCursors).filter(([_, c]) => c.blockId === block.id).map(([sid, c]) => (
-                    <div key={sid} className="remote-cursor" style={{
-                      position: 'absolute',
-                      left: '20px',
-                      top: '10px',
-                      height: '24px',
-                      borderLeft: `2px solid ${c.color}`,
-                    }}>
-                      <div className="remote-cursor-label" style={{ backgroundColor: c.color }}>{c.username}</div>
-                    </div>
-                  ))}
+                  {Object.entries(remoteCursors).filter(([_, c]) => c.blockId === block.id).map(([sid, c]) => {
+                    const pos = calculateCursorPos(block.content, c.offset, false);
+                    return (
+                      <div key={sid} className="remote-cursor" style={{
+                        position: 'absolute',
+                        left: `${pos.left}px`,
+                        top: `${pos.top}px`,
+                        height: '24px',
+                        borderLeft: `2px solid ${c.color}`,
+                        zIndex: 20
+                      }}>
+                        <div className="remote-cursor-label" style={{ backgroundColor: c.color }}>{c.username}</div>
+                      </div>
+                    );
+                  })}
                   {!isReadOnly && (
                     <div className="block-actions">
                       <button
@@ -477,17 +487,21 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
             } else if (block.type === 'code') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ position: 'relative' }}>
-                  {Object.entries(remoteCursors).filter(([_, c]) => c.blockId === block.id).map(([sid, c]) => (
-                    <div key={sid} className="remote-cursor" style={{
-                      position: 'absolute',
-                      left: '40px',
-                      top: '45px',
-                      height: '20px',
-                      borderLeft: `2px solid ${c.color}`,
-                    }}>
-                      <div className="remote-cursor-label" style={{ backgroundColor: c.color }}>{c.username}</div>
-                    </div>
-                  ))}
+                  {Object.entries(remoteCursors).filter(([_, c]) => c.blockId === block.id).map(([sid, c]) => {
+                    const pos = calculateCursorPos(block.content, c.offset, true);
+                    return (
+                      <div key={sid} className="remote-cursor" style={{
+                        position: 'absolute',
+                        left: `${pos.left}px`,
+                        top: `${pos.top}px`,
+                        height: '20px',
+                        borderLeft: `2px solid ${c.color}`,
+                        zIndex: 20
+                      }}>
+                        <div className="remote-cursor-label" style={{ backgroundColor: c.color }}>{c.username}</div>
+                      </div>
+                    );
+                  })}
                   <div className="code-wrapper">
                     <div className="code-header">
                       <span>Kod Bloğu</span>

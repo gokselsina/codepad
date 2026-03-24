@@ -583,10 +583,11 @@ textarea {
   background: transparent;
   border: none;
   color: #c9d1d9;
-  font-size: 1.05rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
   line-height: 1.6;
   outline: none;
-  padding: 0.5rem;
+  padding: 8px;
 }
 
 /* Code Editor Specifics */
