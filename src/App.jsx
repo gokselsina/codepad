@@ -490,6 +490,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
             </div>
           )}
           {blocks.map((block, index) => {
+            const isAiActive = activeAiBlockId === block.id;
             if (block.type === 'text') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem', position: 'relative' }}>
