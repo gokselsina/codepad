@@ -355,6 +355,33 @@ app.delete('/api/teams/:teamId/members/:username', async (req, res) => {
     }
 });
 
+app.get('/api/teams/:teamId/party-note', async (req, res) => {
+    const { teamId } = req.params;
+    const partyNoteId = `party_note_${teamId}`;
+
+    let note = await db.get('SELECT * FROM notes WHERE id = ?', [partyNoteId]);
+    if (!note) {
+        // Initialize party note if not exists
+        await db.run('INSERT INTO notes (id, team_id, title, blocks, sort_order) VALUES (?, ?, ?, ?, ?)',
+            [partyNoteId, teamId, '🎉 Ekip Beyin Fırtınası!', JSON.stringify([{ id: 'b_init', type: 'text', content: 'Hoşgeldiniz! Burası ekibin parti odası. Hadi birlikte birşeyler karalayalım! 🕺' }]), 999]);
+        note = await db.get('SELECT * FROM notes WHERE id = ?', [partyNoteId]);
+    }
+
+    res.json({
+        ...note,
+        blocks: JSON.parse(note.blocks || '[]'),
+        sharedWith: JSON.parse(note.shared_with || '[]')
+    });
+});
+
+app.post('/api/teams/:teamId/party-note', async (req, res) => {
+    const { teamId } = req.params;
+    const { blocks } = req.body;
+    const partyNoteId = `party_note_${teamId}`;
+    await db.run('UPDATE notes SET blocks = ? WHERE id = ?', [JSON.stringify(blocks || []), partyNoteId]);
+    res.json({ success: true });
+});
+
 app.get('/api/teams/collection/:teamId', async (req, res) => {
     const teamId = req.params.teamId;
 

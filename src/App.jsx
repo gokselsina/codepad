@@ -231,12 +231,12 @@ function ShareModal({ isOpen, onClose, note, updateNote, currentUser }) {
   );
 }
 
-function NoteCard({ note, updateNote, deleteNote, currentUser, workspace }) {
+function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForcedParty }) {
   const blocks = note.blocks || [];
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(false);
   const [confirmDeleteBlockId, setConfirmDeleteBlockId] = useState(null);
-  const [isPartyMode, setIsPartyMode] = useState(false);
+  const [isPartyMode, setIsPartyMode] = useState(isForcedParty || false);
   const [remoteCursors, setRemoteCursors] = useState({}); // { socketId: { username, color, blockId, offset } }
 
   const socketRef = useRef(null);
@@ -594,6 +594,34 @@ function MainApp({ currentUser, onLogout }) {
   const [teamNameForm, setTeamNameForm] = useState('');
   const [teamMemberForm, setTeamMemberForm] = useState('');
   const [teamMemberSearchResults, setTeamMemberSearchResults] = useState([]);
+  const [isPartyRoomActive, setIsPartyRoomActive] = useState(false);
+  const [partyNote, setPartyNote] = useState(null);
+
+  useEffect(() => {
+    setIsPartyRoomActive(false);
+    setPartyNote(null);
+  }, [workspace.id]);
+
+  const fetchPartyNote = () => {
+    if (workspace.type !== 'team') return;
+    fetch(`/api/teams/${workspace.id}/party-note`)
+      .then(r => r.json())
+      .then(note => {
+        setPartyNote(note);
+        setIsPartyRoomActive(true);
+      });
+  };
+
+  const updatePartyNote = (id, field, value) => {
+    setPartyNote(prev => ({ ...prev, [field]: value }));
+    // Saving to server is handled by periodic saves or explicit post if needed?
+    // Actually NoteCard handles socket emits. We just need to handle the DB save.
+    fetch(`/api/teams/${workspace.id}/party-note`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blocks: field === 'blocks' ? value : partyNote.blocks })
+    });
+  };
 
   useEffect(() => {
     if (!teamMemberForm.trim()) {
@@ -697,6 +725,18 @@ function MainApp({ currentUser, onLogout }) {
   const updateNote = (id, field, value, isRemote = false) => {
     setNotes(notes.map(note => note.id === id ? { ...note, [field]: value } : note));
     if (isRemote) initialMount.current = false; // Just to be safe but usually we want to save
+  };
+
+  const updateNotePartyRoom = (id, field, value, isRemote = false) => {
+    setPartyNote(prev => ({ ...prev, [field]: value }));
+    if (!isRemote) {
+      // Only save to DB if it's a local edit
+      fetch(`/api/teams/${workspace.id}/party-note`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocks: field === 'blocks' ? value : partyNote.blocks })
+      });
+    }
   };
 
   const deleteNote = (id) => {
@@ -976,22 +1016,34 @@ function MainApp({ currentUser, onLogout }) {
               <option value="create_team">➕ Yeni Ekip Oluştur</option>
             </select>
             {workspace.type === 'team' && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <span>Üyeler: {userTeams.find(t => t.id === workspace.id)?.members?.length || 0} kişi</span>
-                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                  <button className="btn-icon" onClick={() => setIsManageTeamModalOpen(true)} title="Üyeleri Yönet" style={{ padding: '0.2rem', background: 'rgba(255, 255, 255, 0.05)' }}>
-                    <Users size={14} />
-                  </button>
-                  <button className="btn-icon" onClick={() => setIsAddTeamMemberModalOpen(true)} title="Ekibe Üye Ekle" style={{ padding: '0.2rem', background: 'rgba(59, 130, 246, 0.2)' }}>
-                    <UserPlus size={14} color="var(--accent-color)" />
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <span>Üyeler: {userTeams.find(t => t.id === workspace.id)?.members?.length || 0} kişi</span>
+                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                    <button className="btn-icon" onClick={() => setIsManageTeamModalOpen(true)} title="Üyeleri Yönet" style={{ padding: '0.2rem', background: 'rgba(255, 255, 255, 0.05)' }}>
+                      <Users size={14} />
+                    </button>
+                    <button className="btn-icon" onClick={() => setIsAddTeamMemberModalOpen(true)} title="Ekibe Üye Ekle" style={{ padding: '0.2rem', background: 'rgba(59, 130, 246, 0.2)' }}>
+                      <UserPlus size={14} color="var(--accent-color)" />
+                    </button>
+                  </div>
+                </div>
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <button
+                    className={`btn ${isPartyRoomActive ? 'btn-success' : 'btn-secondary'}`}
+                    style={{ width: '100%', padding: '0.4rem', fontSize: '0.8rem', background: isPartyRoomActive ? 'var(--success-color)' : 'rgba(139, 92, 246, 0.15)', borderColor: isPartyRoomActive ? 'transparent' : 'rgba(139, 92, 246, 0.3)', color: isPartyRoomActive ? '#fff' : '#c084fc' }}
+                    onClick={fetchPartyNote}
+                  >
+                    <Sparkles size={14} className={isPartyRoomActive ? 'animate-spin' : ''} />
+                    Parti Odasına Gir
                   </button>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
 
-        <button className="add-category-btn" onClick={() => { setEditingFolderId(null); setIsModalOpen(true); }}>
+        <button className="add-category-btn" onClick={() => { setIsPartyRoomActive(false); setEditingFolderId(null); setIsModalOpen(true); }}>
           <Plus size={18} /> Yeni Kategori Ekle
         </button>
 
@@ -1105,7 +1157,16 @@ function MainApp({ currentUser, onLogout }) {
           </div>
         </header>
 
-        {selectedNote ? (
+        {isPartyRoomActive && partyNote ? (
+          <NoteCard
+            note={partyNote}
+            updateNote={updateNotePartyRoom}
+            deleteNote={() => setIsPartyRoomActive(false)}
+            currentUser={currentUser}
+            workspace={workspace}
+            isForcedParty={true}
+          />
+        ) : selectedNote ? (
           <NoteCard
             note={selectedNote}
             updateNote={updateNote}
