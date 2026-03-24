@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-color: #0d1117;
-  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(45, 20, 80, 0.4), transparent 50%),
-    radial-gradient(circle at 85% 30%, rgba(20, 50, 80, 0.4), transparent 50%);
-  --card-bg: rgba(22, 27, 34, 0.65);
-  --card-border: rgba(48, 54, 61, 0.8);
-  --text-main: #c9d1d9;
-  --text-muted: #8b949e;
-  --accent-color: #58a6ff;
-  --accent-hover: #3182ce;
-  --success-color: #2ea043;
-  --danger-color: #f85149;
-  --glass-blur: blur(12px);
+  --bg-color: #000000;
+  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 40%);
+  --card-bg: rgba(20, 20, 22, 0.65);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-main: #EDEDED;
+  --text-muted: #888888;
+  --accent-color: #3b82f6;
+  --accent-hover: #2563EB;
+  --success-color: #10B981;
+  --danger-color: #EF4444;
+  --glass-blur: blur(24px);
 }
 
 * {
@@ -97,17 +97,17 @@ textarea {
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
-  background: rgba(13, 17, 23, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  max-width: 440px;
+  background: rgba(15, 15, 18, 0.7);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 0.5rem;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 24px 64px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   z-index: 2;
-  animation: floatCard 6s ease-in-out infinite;
+  animation: floatCard 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 @keyframes floatCard {
@@ -162,16 +162,18 @@ textarea {
 
 .auth-header {
   text-align: center;
-  padding: 2rem 2rem 1rem 2rem;
+  padding: 2.5rem 2rem 1.5rem 2rem;
 }
 
 .auth-header h1 {
-  font-size: 2.5rem;
-  letter-spacing: -1px;
-  background: linear-gradient(135deg, #fff 0%, #8b949e 100%);
+  font-size: 3.5rem;
+  letter-spacing: -2px;
+  line-height: 1;
+  background: linear-gradient(180deg, #FFFFFF 0%, #A1A1AA 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  font-weight: 800;
 }
 
 .auth-tabs {
@@ -286,19 +288,19 @@ textarea {
 
 /* Sidebar (Sol Menü) */
 .sidebar {
-  width: 340px;
+  width: 320px;
   display: flex;
   flex-direction: column;
-  background: var(--card-bg);
+  background: rgba(20, 20, 22, 0.4);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 12px 32px rgba(0, 0, 0, 0.3);
   height: 100%;
   overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
 }
 
@@ -461,9 +463,9 @@ textarea {
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--card-border);
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.02), 0 12px 48px rgba(0, 0, 0, 0.4);
 }
 
 .note-editing-area {
@@ -557,23 +559,38 @@ textarea {
 /* Code Editor Specifics */
 .code-wrapper {
   position: relative;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--card-border);
-  background-color: #0d1117;
+  background-color: #09090b;
   margin: 0.5rem 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .code-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.4rem 1rem;
-  background-color: #161b22;
+  padding: 0.6rem 1rem 0.6rem 4.5rem;
+  background-color: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--card-border);
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.8rem;
   color: var(--text-muted);
+  position: relative;
+}
+
+.code-header::before {
+  content: '';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #ff5f56;
+  box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27c93f;
 }
 
 .code-editor-container {
@@ -663,7 +680,7 @@ textarea {
 .block-wrapper:hover .inline-add-container,
 .inline-add-container:hover {
   opacity: 1;
-  height: 40px;
+  height: 44px;
   margin: 0.5rem 0;
 }
 
@@ -674,36 +691,39 @@ textarea {
   left: 0;
   right: 0;
   border-top: 1px solid var(--accent-color);
-  opacity: 0.15;
+  opacity: 0.25;
   z-index: -1;
+  box-shadow: 0 0 10px var(--accent-color);
 }
 
 .inline-add-actions {
   display: flex;
-  gap: 0.5rem;
-  background: var(--bg-color);
-  padding: 0 1rem;
-  border-radius: 16px;
+  gap: 0.75rem;
+  background: var(--card-bg);
+  padding: 0.25rem 1rem;
+  border-radius: 100px;
+  border: 1px solid var(--card-border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
 }
 
 .inline-add-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--card-border);
+  background: transparent;
+  border: none;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   padding: 0.3rem 0.6rem;
   border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  transition: all 0.2s;
+  transition: all 0.25s;
   cursor: pointer;
 }
 
 .inline-add-btn:hover {
-  background: rgba(88, 166, 255, 0.15);
-  color: #fff;
-  border-color: var(--accent-color);
+  color: var(--accent-color);
   transform: scale(1.05);
 }
 
