@@ -506,9 +506,9 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                     <div className="code-header">
                       <span>Kod Bloğu</span>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleCopy(block.id, block.content)}>
+                        <button className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleCopy(block.id, block.content)}>
                           {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
-                          {copiedBlockId === block.id ? 'Kopyalandı!' : 'Kopyala'}
+                          {copiedBlockId === block.id ? 'Kopyalandı' : 'Kopyala'}
                         </button>
                         {!isReadOnly && (
                           <button
