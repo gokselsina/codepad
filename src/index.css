@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  --bg-color: #0d1117;
-  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(56, 139, 253, 0.08), transparent 40%),
+  --bg-color: #25292e;
+  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(88, 166, 255, 0.08), transparent 40%),
     radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.08), transparent 40%);
-  --card-bg: #161b22;
-  --card-border: #30363d;
-  --text-main: #c9d1d9;
-  --text-muted: #8b949e;
+  --card-bg: #2e343b;
+  --card-border: rgba(255, 255, 255, 0.12);
+  --text-main: #e6edf3;
+  --text-muted: #9ba1a9;
   --accent-color: #58a6ff;
   --accent-hover: #1f6feb;
   --success-color: #238636;
@@ -291,7 +291,7 @@ textarea {
   width: 320px;
   display: flex;
   flex-direction: column;
-  background: #010409;
+  background: #1e2227;
   border-right: 1px solid var(--card-border);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -596,9 +596,9 @@ textarea {
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--card-border);
-  background-color: #0d1117;
+  background-color: #25292e;
   margin: 0.5rem 0;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .code-header {
