@@ -327,7 +327,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
         </div>
 
         <div className="blocks-container">
-          {blocks.map((block) => {
+          {blocks.map((block, index) => {
             if (block.type === 'text') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
