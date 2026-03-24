@@ -42,6 +42,10 @@ io.on('connection', (socket) => {
         socket.to(`note_${noteId}`).emit('cursorUpdated', { blockId, cursor, senderId: socket.id });
     });
 
+    socket.on('blocksChanged', ({ noteId, blocks, username }) => {
+        socket.to(`note_${noteId}`).emit('blocksUpdated', { blocks, sender: username });
+    });
+
     socket.on('disconnect', () => {
         const user = activeUsers[socket.id];
         if (user) {

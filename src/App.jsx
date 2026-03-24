@@ -270,6 +270,10 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
         updateNote(note.id, 'blocks', newBlocks, true); // Added 'true' to signal 'remote' update
       });
 
+      socketRef.current.on('blocksUpdated', ({ blocks }) => {
+        updateNote(note.id, 'blocks', blocks, true);
+      });
+
       socketRef.current.on('cursorUpdated', ({ blockId, cursor, senderId }) => {
         setRemoteCursors(prev => ({ ...prev, [senderId]: { ...cursor, blockId } }));
       });
@@ -316,6 +320,10 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     const newBlocks = [...blocks];
     newBlocks.splice(index + 1, 0, newBlock);
     updateNote(note.id, 'blocks', newBlocks);
+
+    if (isPartyMode && socketRef.current) {
+      socketRef.current.emit('blocksChanged', { noteId: note.id, blocks: newBlocks, username: currentUser });
+    }
   };
 
   const updateBlock = (blockId, content) => {
@@ -332,6 +340,10 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     if (isReadOnly) return;
     const newBlocks = blocks.filter(b => b.id !== blockId);
     updateNote(note.id, 'blocks', newBlocks);
+
+    if (isPartyMode && socketRef.current) {
+      socketRef.current.emit('blocksChanged', { noteId: note.id, blocks: newBlocks, username: currentUser });
+    }
   };
 
   const [copiedBlockId, setCopiedBlockId] = useState(null);
@@ -389,9 +401,20 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
               style={{ color: isReadOnly ? 'var(--text-muted)' : '#fff' }}
             />
           </div>
-          {!isReadOnly && (
+          {!isReadOnly && !isForcedParty && (
             <button className="btn-icon" onClick={() => setIsShareModalOpen(true)} title="Paylaş" style={{ marginRight: '0.5rem' }}>
               <Share2 size={20} />
+            </button>
+          )}
+
+          {isForcedParty && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => deleteNote(note.id)}
+              style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', marginRight: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger-color)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+            >
+              <LogOut size={14} />
+              Partiden Ayrıl
             </button>
           )}
           {!isReadOnly && (
