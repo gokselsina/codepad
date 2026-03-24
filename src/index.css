@@ -457,11 +457,32 @@ textarea {
   opacity: 0.5;
 }
 
-.tree-note-item.drag-over-note {
+.tree-note-item.drag-over-top {
+  border-top: 2px solid var(--accent-color);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.tree-note-item.drag-over-bottom {
   border-bottom: 2px solid var(--accent-color);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
   background-color: rgba(59, 130, 246, 0.1);
+}
+
+.tree-folder.drag-over-top {
+  border-top: 2px solid var(--accent-color);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.tree-folder.drag-over-bottom {
+  border-bottom: 2px solid var(--accent-color);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background-color: rgba(59, 130, 246, 0.05);
 }
 
 .tree-folder.dragging-folder {
@@ -856,6 +877,17 @@ textarea {
 
 .btn-primary:hover {
   background-color: var(--accent-hover);
+}
+
+.btn-success {
+  background-color: var(--success-color);
+  color: #fff;
+  border-color: transparent;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+  /* darker emerald */
 }
 
 .btn-secondary {

@@ -251,6 +251,10 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
 
   const removeBlock = (blockId) => {
     if (isReadOnly) return;
+    const block = blocks.find(b => b.id === blockId);
+    if (block && block.content && block.content.trim().length > 0) {
+      if (!window.confirm("Bu blokta içerik var, silmek istediğinize emin misiniz?")) return;
+    }
     const newBlocks = blocks.filter(b => b.id !== blockId);
     updateNote(note.id, 'blocks', newBlocks);
   };
@@ -260,7 +264,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
   const handleCopy = (blockId, content) => {
     navigator.clipboard.writeText(content);
     setCopiedBlockId(blockId);
-    setTimeout(() => setCopiedBlockId(null), 2000);
+    setTimeout(() => setCopiedBlockId(null), 1000);
   };
 
   const handlePasteCode = (e, blockId, currentContent) => {
@@ -369,7 +373,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                     <div className="code-header">
                       <span>Kod Bloğu</span>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button className="btn btn-primary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleCopy(block.id, block.content)}>
+                        <button className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleCopy(block.id, block.content)}>
                           {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
                           {copiedBlockId === block.id ? 'Kopyalandı!' : 'Kopyala'}
                         </button>
@@ -520,6 +524,13 @@ function MainApp({ currentUser, onLogout }) {
   };
 
   const deleteNote = (id) => {
+    const noteToDelete = notes.find(n => n.id === id);
+    const hasContent = noteToDelete?.blocks?.some(b => b.content && b.content.trim().length > 0);
+
+    if (hasContent) {
+      if (!window.confirm("Bu notun içi dolu. Tamamen silmek istediğinize emin misiniz?")) return;
+    }
+
     const updated = notes.filter(n => n.id !== id);
     setNotes(updated);
     if (selectedNoteId === id) setSelectedNoteId(updated.length > 0 ? updated[0].id : null);
