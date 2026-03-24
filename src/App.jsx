@@ -1167,6 +1167,26 @@ function MainApp({ currentUser, onLogout }) {
               </>
             )}
           </div>
+
+          <div
+            className="input-field"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              cursor: 'pointer',
+              padding: '0.6rem 0.8rem',
+              fontSize: '0.85rem',
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: '10px',
+              marginTop: '0.2rem'
+            }}
+            onClick={() => setIsSpotlightOpen(true)}
+          >
+            <Search size={16} color="var(--accent-color)" />
+            <span style={{ color: 'var(--text-muted)', flex: 1 }}>Tüm notlarda ara...</span>
+            <span style={{ fontSize: '0.7rem', padding: '1px 5px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', opacity: 0.6 }}>⌘K</span>
+          </div>
         </div>
 
         <button className="add-category-btn" onClick={() => { setIsPartyRoomActive(false); setEditingFolderId(null); setIsModalOpen(true); }}>
