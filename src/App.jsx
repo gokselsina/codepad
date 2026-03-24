@@ -233,6 +233,8 @@ function ShareModal({ isOpen, onClose, note, updateNote, currentUser }) {
 function NoteCard({ note, updateNote, deleteNote, currentUser }) {
   const blocks = note.blocks || [];
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [confirmDeleteNote, setConfirmDeleteNote] = useState(false);
+  const [confirmDeleteBlockId, setConfirmDeleteBlockId] = useState(null);
   const isReadOnly = !!note.isShared;
 
   const addBlock = (index, type) => {
@@ -251,10 +253,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
 
   const removeBlock = (blockId) => {
     if (isReadOnly) return;
-    const block = blocks.find(b => b.id === blockId);
-    if (block && block.content && block.content.trim().length > 0) {
-      if (!window.confirm("Bu blokta içerik var, silmek istediğinize emin misiniz?")) return;
-    }
     const newBlocks = blocks.filter(b => b.id !== blockId);
     updateNote(note.id, 'blocks', newBlocks);
   };
@@ -320,8 +318,21 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
             </button>
           )}
           {!isReadOnly && (
-            <button className="btn-icon btn-danger" onClick={() => deleteNote(note.id)} title="Lütfen Sil">
-              <Trash2 size={20} />
+            <button
+              className="btn-icon btn-danger"
+              style={confirmDeleteNote ? { background: 'var(--danger-color)', color: '#fff', border: 'none', padding: '0.4rem 0.8rem' } : {}}
+              onClick={() => {
+                const hasContent = blocks.some(b => b.content && b.content.trim().length > 0);
+                if (hasContent && !confirmDeleteNote) {
+                  setConfirmDeleteNote(true);
+                  setTimeout(() => setConfirmDeleteNote(false), 3000);
+                } else {
+                  deleteNote(note.id);
+                }
+              }}
+              title="Notu Sil"
+            >
+              {confirmDeleteNote ? <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Emin misiniz?</span> : <Trash2 size={20} />}
             </button>
           )}
         </div>
@@ -343,8 +354,20 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
                   {!isReadOnly && (
                     <div className="block-actions">
-                      <button className="block-btn block-btn-danger" onClick={() => removeBlock(block.id)} title="Sil">
-                        <Trash2 size={14} />
+                      <button
+                        className="block-btn block-btn-danger"
+                        style={confirmDeleteBlockId === block.id ? { background: 'var(--danger-color)', color: '#fff', border: 'none' } : {}}
+                        onClick={() => {
+                          if (block.content && block.content.trim().length > 0 && confirmDeleteBlockId !== block.id) {
+                            setConfirmDeleteBlockId(block.id);
+                            setTimeout(() => setConfirmDeleteBlockId(null), 3000);
+                          } else {
+                            removeBlock(block.id);
+                          }
+                        }}
+                        title="Sil"
+                      >
+                        {confirmDeleteBlockId === block.id ? <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Emin misiniz?</span> : <Trash2 size={14} />}
                       </button>
                     </div>
                   )}
@@ -378,8 +401,20 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                           {copiedBlockId === block.id ? 'Kopyalandı!' : 'Kopyala'}
                         </button>
                         {!isReadOnly && (
-                          <button className="btn-icon btn-danger" style={{ padding: '0.2rem 0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }} onClick={() => removeBlock(block.id)} title="Sil">
-                            <Trash2 size={16} />
+                          <button
+                            className="btn-icon btn-danger"
+                            style={confirmDeleteBlockId === block.id ? { background: 'var(--danger-color)', color: '#fff', border: 'none', padding: '0.2rem 0.6rem' } : { padding: '0.2rem 0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}
+                            onClick={() => {
+                              if (block.content && block.content.trim().length > 0 && confirmDeleteBlockId !== block.id) {
+                                setConfirmDeleteBlockId(block.id);
+                                setTimeout(() => setConfirmDeleteBlockId(null), 3000);
+                              } else {
+                                removeBlock(block.id);
+                              }
+                            }}
+                            title="Sil"
+                          >
+                            {confirmDeleteBlockId === block.id ? <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Emin misiniz?</span> : <Trash2 size={16} />}
                           </button>
                         )}
                       </div>
@@ -524,13 +559,6 @@ function MainApp({ currentUser, onLogout }) {
   };
 
   const deleteNote = (id) => {
-    const noteToDelete = notes.find(n => n.id === id);
-    const hasContent = noteToDelete?.blocks?.some(b => b.content && b.content.trim().length > 0);
-
-    if (hasContent) {
-      if (!window.confirm("Bu notun içi dolu. Tamamen silmek istediğinize emin misiniz?")) return;
-    }
-
     const updated = notes.filter(n => n.id !== id);
     setNotes(updated);
     if (selectedNoteId === id) setSelectedNoteId(updated.length > 0 ? updated[0].id : null);
