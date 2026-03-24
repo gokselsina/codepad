@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus } from 'lucide-react';
 import EditorModule from 'react-simple-code-editor';
 const Editor = EditorModule.default || EditorModule;
 import Prism from 'prismjs';
@@ -487,16 +487,35 @@ function MainApp({ currentUser, onLogout }) {
   const [dragOverItem, setDragOverItem] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  const [workspace, setWorkspace] = useState({ type: 'personal', id: currentUser });
+  const [userTeams, setUserTeams] = useState([]);
+  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
+  const [isAddTeamMemberModalOpen, setIsAddTeamMemberModalOpen] = useState(false);
+  const [teamNameForm, setTeamNameForm] = useState('');
+  const [teamMemberForm, setTeamMemberForm] = useState('');
+
+  const fetchTeams = () => {
+    fetch(`/api/teams/${currentUser}`).then(r => r.json()).then(data => setUserTeams(data));
+  };
+
+  useEffect(() => {
+    fetchTeams();
+  }, [currentUser]);
+
   const initialMount = useRef(true);
 
   useEffect(() => {
-    fetch(`/api/collection/${currentUser}`)
+    setLoading(true);
+    const endpoint = workspace.type === 'personal' ? `/api/collection/${currentUser}` : `/api/teams/collection/${workspace.id}`;
+    fetch(endpoint)
       .then(res => res.json())
       .then(data => {
         setFolders(data.folders || []);
         setNotes(data.notes || []);
         if (data.notes && data.notes.length > 0) {
           setSelectedNoteId(data.notes[0].id);
+        } else {
+          setSelectedNoteId(null);
         }
         setLoading(false);
       })
@@ -504,7 +523,7 @@ function MainApp({ currentUser, onLogout }) {
         console.error("Veri çekme hatası:", err);
         setLoading(false);
       });
-  }, [currentUser]);
+  }, [currentUser, workspace]);
 
   useEffect(() => {
     if (loading) return;
@@ -512,18 +531,22 @@ function MainApp({ currentUser, onLogout }) {
       initialMount.current = false;
       return;
     }
-    fetch(`/api/collection/${currentUser}`, {
+    const endpoint = workspace.type === 'personal' ? `/api/collection/${currentUser}` : `/api/teams/collection/${workspace.id}`;
+    fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folders, notes })
     }).catch(e => console.error("Kayıt hatası:", e));
-  }, [folders, notes, loading, currentUser]);
+  }, [folders, notes, loading, workspace]);
 
   const handleSaveFolder = (data) => {
     if (editingFolderId) {
       setFolders(folders.map(f => f.id === editingFolderId ? { ...f, ...data } : f));
     } else {
-      setFolders([...folders, { id: 'f_' + Date.now().toString(), ...data }]);
+      const isTeam = workspace.type === 'team';
+      const folderPayload = { id: (isTeam ? 'tf_' : 'f_') + Date.now().toString(), ...data };
+      if (isTeam) folderPayload.teamId = workspace.id;
+      setFolders([...folders, folderPayload]);
     }
   };
 
@@ -705,12 +728,87 @@ function MainApp({ currentUser, onLogout }) {
         onSave={handleSaveFolder}
       />
 
+      {isCreateTeamModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card">
+            <h3>Yeni Ekip Oluştur</h3>
+            <input type="text" className="input-field" placeholder="Ekip Adı" value={teamNameForm} onChange={e => setTeamNameForm(e.target.value)} />
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setIsCreateTeamModalOpen(false)}>İptal</button>
+              <button className="btn btn-primary" onClick={() => {
+                fetch('/api/teams', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ name: teamNameForm || 'Yeni Ekip', owner: currentUser })
+                }).then(r => r.json()).then(team => {
+                  fetchTeams();
+                  setIsCreateTeamModalOpen(false);
+                  setWorkspace({ type: 'team', id: team.id, name: team.name });
+                  setTeamNameForm('');
+                });
+              }}>Oluştur</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddTeamMemberModalOpen && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card">
+            <h3>Ekibe Üye Davet Et</h3>
+            <input type="text" className="input-field" placeholder="Kullanıcı Adı" value={teamMemberForm} onChange={e => setTeamMemberForm(e.target.value)} />
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={() => setIsAddTeamMemberModalOpen(false)}>İptal</button>
+              <button className="btn btn-primary" onClick={() => {
+                fetch(`/api/teams/${workspace.id}/members`, {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ memberUsername: teamMemberForm })
+                }).then(r => r.json()).then(res => {
+                  fetchTeams();
+                  setIsAddTeamMemberModalOpen(false);
+                  setTeamMemberForm('');
+                  if (res.error) alert(res.error);
+                });
+              }}>Davet Et</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className={`sidebar animate-fade-in ${isSidebarOpen ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <h2>Kategoriler</h2>
-          <button className="btn-icon" onClick={() => setIsSidebarOpen(false)} title="Menüyü Gizle" style={{ padding: '0.25rem', border: 'transparent' }}>
-            <ChevronLeft size={20} />
-          </button>
+        <div className="sidebar-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>{workspace.type === 'personal' ? 'Kategoriler' : 'Ekip Alanı'}</h2>
+            <button className="btn-icon" onClick={() => setIsSidebarOpen(false)} title="Menüyü Gizle" style={{ padding: '0.25rem', border: 'transparent' }}>
+              <ChevronLeft size={20} />
+            </button>
+          </div>
+
+          <div className="workspace-switcher">
+            <select
+              value={workspace.type === 'personal' ? 'personal' : workspace.id}
+              onChange={(e) => {
+                if (e.target.value === 'personal') setWorkspace({ type: 'personal', id: currentUser });
+                else if (e.target.value === 'create_team') setIsCreateTeamModalOpen(true);
+                else setWorkspace({ type: 'team', id: e.target.value, name: e.target.options[e.target.selectedIndex].text });
+              }}
+              className="input-field"
+              style={{ padding: '0.5rem', width: '100%', marginBottom: '0.5rem', background: 'rgba(255,255,255,0.05)', fontSize: '0.85rem', color: '#fff', border: '1px solid var(--card-border)', borderRadius: '8px' }}
+            >
+              <option value="personal">👤 Kişisel Alanım</option>
+              {userTeams.map(t => (
+                <option key={t.id} value={t.id}>👥 Ekip: {t.name}</option>
+              ))}
+              <option value="create_team">➕ Yeni Ekip Oluştur</option>
+            </select>
+            {workspace.type === 'team' && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <span>Üyeler: {userTeams.find(t => t.id === workspace.id)?.members?.length} kişi</span>
+                <button className="btn-icon" onClick={() => setIsAddTeamMemberModalOpen(true)} title="Ekibe Üye Ekle" style={{ padding: '0.2rem', background: 'rgba(59, 130, 246, 0.2)' }}>
+                  <UserPlus size={14} color="var(--accent-color)" />
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <button className="add-category-btn" onClick={() => { setEditingFolderId(null); setIsModalOpen(true); }}>

@@ -15,7 +15,7 @@ app.use(express.json({ limit: '50mb' }));
 const dbPath = path.join(__dirname, 'db.json');
 
 if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify({ users: {}, collections: {} }, null, 2), 'utf8');
+    fs.writeFileSync(dbPath, JSON.stringify({ users: {}, collections: {}, teams: {}, teamCollections: {} }, null, 2), 'utf8');
 }
 
 function getDb() {
@@ -116,6 +116,62 @@ app.post('/api/collection/:username', (req, res) => {
     incomingData.notes = incomingData.notes.filter(n => !n.isShared);
 
     db.collections[reqUser] = incomingData;
+    saveDb(db);
+    res.json({ success: true });
+});
+
+// --- TEAMS API ---
+app.get('/api/teams/:username', (req, res) => {
+    const db = getDb();
+    if (!db.teams) { db.teams = {}; saveDb(db); }
+    const username = req.params.username;
+    const userTeams = Object.values(db.teams).filter(t => t.members && t.members.includes(username));
+    res.json(userTeams);
+});
+
+app.post('/api/teams', (req, res) => {
+    const { name, owner } = req.body;
+    const db = getDb();
+    if (!db.teams) db.teams = {};
+    if (!db.teamCollections) db.teamCollections = {};
+    const teamId = 't_' + Date.now();
+    const newTeam = { id: teamId, name, owner, members: [owner] };
+    db.teams[teamId] = newTeam;
+    db.teamCollections[teamId] = {
+        folders: [{ id: 'tf_gen_' + Date.now(), name: 'Ekip Genel', color: '#10B981' }],
+        notes: []
+    };
+    saveDb(db);
+    res.json(newTeam);
+});
+
+app.post('/api/teams/:teamId/members', (req, res) => {
+    const { memberUsername } = req.body;
+    const teamId = req.params.teamId;
+    const db = getDb();
+    if (db.teams && db.teams[teamId]) {
+        if (!db.teams[teamId].members.includes(memberUsername)) {
+            db.teams[teamId].members.push(memberUsername);
+            saveDb(db);
+        }
+        res.json({ success: true, team: db.teams[teamId] });
+    } else {
+        res.status(404).json({ error: 'Ekip bulunamadı' });
+    }
+});
+
+app.get('/api/teams/collection/:teamId', (req, res) => {
+    const db = getDb();
+    const teamId = req.params.teamId;
+    const coll = db.teamCollections && db.teamCollections[teamId] ? db.teamCollections[teamId] : { folders: [], notes: [] };
+    res.json(coll);
+});
+
+app.post('/api/teams/collection/:teamId', (req, res) => {
+    const db = getDb();
+    const teamId = req.params.teamId;
+    if (!db.teamCollections) db.teamCollections = {};
+    db.teamCollections[teamId] = req.body;
     saveDb(db);
     res.json({ success: true });
 });
