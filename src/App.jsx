@@ -493,6 +493,23 @@ function MainApp({ currentUser, onLogout }) {
   const [isAddTeamMemberModalOpen, setIsAddTeamMemberModalOpen] = useState(false);
   const [teamNameForm, setTeamNameForm] = useState('');
   const [teamMemberForm, setTeamMemberForm] = useState('');
+  const [teamMemberSearchResults, setTeamMemberSearchResults] = useState([]);
+
+  useEffect(() => {
+    if (!teamMemberForm.trim()) {
+      setTeamMemberSearchResults([]);
+      return;
+    }
+    const delay = setTimeout(() => {
+      fetch(`/api/users/search?q=${encodeURIComponent(teamMemberForm)}`)
+        .then(res => res.json())
+        .then(data => {
+          const currentMembers = userTeams.find(t => t.id === workspace.id)?.members || [];
+          setTeamMemberSearchResults((data.users || []).filter(u => !currentMembers.includes(u)));
+        });
+    }, 300);
+    return () => clearTimeout(delay);
+  }, [teamMemberForm, workspace.id, userTeams]);
 
   const fetchTeams = () => {
     fetch(`/api/teams/${currentUser}`).then(r => r.json()).then(data => setUserTeams(data));
@@ -752,23 +769,44 @@ function MainApp({ currentUser, onLogout }) {
       )}
 
       {isAddTeamMemberModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-card">
+        <div className="modal-overlay" onClick={() => { setIsAddTeamMemberModalOpen(false); setTeamMemberForm(''); }}>
+          <div className="modal-content glass-card" onClick={e => e.stopPropagation()}>
             <h3>Ekibe Üye Davet Et</h3>
-            <input type="text" className="input-field" placeholder="Kullanıcı Adı" value={teamMemberForm} onChange={e => setTeamMemberForm(e.target.value)} />
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setIsAddTeamMemberModalOpen(false)}>İptal</button>
-              <button className="btn btn-primary" onClick={() => {
-                fetch(`/api/teams/${workspace.id}/members`, {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ memberUsername: teamMemberForm })
-                }).then(r => r.json()).then(res => {
-                  fetchTeams();
-                  setIsAddTeamMemberModalOpen(false);
-                  setTeamMemberForm('');
-                  if (res.error) alert(res.error);
-                });
-              }}>Davet Et</button>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Kullanıcı Adı Ara..."
+              value={teamMemberForm}
+              onChange={e => setTeamMemberForm(e.target.value)}
+              autoFocus
+            />
+            {teamMemberForm.trim().length > 0 && (
+              <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#09090b', borderRadius: '8px', border: '1px solid var(--card-border)', marginTop: '0.5rem', display: 'flex', flexDirection: 'column' }}>
+                {teamMemberSearchResults.map(user => (
+                  <div
+                    key={user}
+                    onClick={() => {
+                      fetch(`/api/teams/${workspace.id}/members`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ memberUsername: user })
+                      }).then(r => r.json()).then(res => {
+                        fetchTeams();
+                        setTeamMemberForm('');
+                        if (res.error) alert(res.error);
+                      });
+                    }}
+                    style={{ padding: '0.6rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <User size={16} color="var(--accent-color)" />
+                    {user}
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>+ Ekle</span>
+                  </div>
+                ))}
+                {teamMemberSearchResults.length === 0 && <div style={{ padding: '0.8rem 1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>Kullanıcı bulunamadı...</div>}
+              </div>
+            )}
+            <div className="modal-actions" style={{ marginTop: '1rem' }}>
+              <button className="btn btn-secondary" onClick={() => { setIsAddTeamMemberModalOpen(false); setTeamMemberForm(''); }}>Kapat</button>
             </div>
           </div>
         </div>
