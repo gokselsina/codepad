@@ -239,11 +239,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
     if (isReadOnly) return;
     const newBlock = { id: Date.now().toString() + Math.random(), type, content: '' };
     const newBlocks = [...blocks];
-    if (index === -1) {
-      newBlocks.push(newBlock);
-    } else {
-      newBlocks.splice(index + 1, 0, newBlock);
-    }
+    newBlocks.splice(index + 1, 0, newBlock);
     updateNote(note.id, 'blocks', newBlocks);
   };
 
@@ -327,18 +323,20 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
         </div>
 
         <div className="blocks-container">
+          {!isReadOnly && blocks.length > 0 && (
+            <div className="top-add-trigger">
+              <div className="inline-add-container">
+                <div className="inline-add-actions">
+                  <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin Yukarı Ekle</button>
+                  <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod Yukarı Ekle</button>
+                </div>
+              </div>
+            </div>
+          )}
           {blocks.map((block, index) => {
             if (block.type === 'text') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
-                  {!isReadOnly && index === 0 && (
-                    <div className="inline-add-container">
-                      <div className="inline-add-actions">
-                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin Yukarı Ekle</button>
-                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod Yukarı Ekle</button>
-                      </div>
-                    </div>
-                  )}
                   {!isReadOnly && (
                     <div className="block-actions">
                       <button className="block-btn block-btn-danger" onClick={() => removeBlock(block.id)} title="Sil">
@@ -367,14 +365,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
             } else if (block.type === 'code') {
               return (
                 <div key={block.id} className="block-wrapper">
-                  {!isReadOnly && index === 0 && (
-                    <div className="inline-add-container">
-                      <div className="inline-add-actions">
-                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'text')}><Type size={14} /> Metin Yukarı Ekle</button>
-                        <button className="inline-add-btn" onClick={() => addBlock(-1, 'code')}><Code size={14} /> Kod Yukarı Ekle</button>
-                      </div>
-                    </div>
-                  )}
                   <div className="code-wrapper">
                     <div className="code-header">
                       <span>Kod Bloğu</span>

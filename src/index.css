@@ -664,6 +664,20 @@ textarea {
 
 /* Modal styles */
 /* Inline Add Block Menu */
+.top-add-trigger {
+  padding: 10px 0;
+  margin-top: -10px;
+  margin-bottom: -15px;
+  position: relative;
+  z-index: 10;
+}
+
+.top-add-trigger:hover .inline-add-container {
+  opacity: 1;
+  height: 44px;
+  margin: 0.5rem 0;
+}
+
 .inline-add-container {
   display: flex;
   justify-content: center;
