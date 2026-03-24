@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus } from 'lucide-react';
+import { io } from 'socket.io-client';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles } from 'lucide-react';
 import EditorModule from 'react-simple-code-editor';
 const Editor = EditorModule.default || EditorModule;
 import Prism from 'prismjs';
@@ -230,12 +231,68 @@ function ShareModal({ isOpen, onClose, note, updateNote, currentUser }) {
   );
 }
 
-function NoteCard({ note, updateNote, deleteNote, currentUser }) {
+function NoteCard({ note, updateNote, deleteNote, currentUser, workspace }) {
   const blocks = note.blocks || [];
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(false);
   const [confirmDeleteBlockId, setConfirmDeleteBlockId] = useState(null);
+  const [isPartyMode, setIsPartyMode] = useState(false);
+  const [remoteCursors, setRemoteCursors] = useState({}); // { socketId: { username, color, blockId, offset } }
+
+  const socketRef = useRef(null);
   const isReadOnly = !!note.isShared;
+
+  useEffect(() => {
+    if (isPartyMode && workspace.type === 'team') {
+      socketRef.current = io(window.location.origin);
+      socketRef.current.emit('joinNote', { username: currentUser, noteId: note.id });
+
+      socketRef.current.on('blockUpdated', ({ blockId, content }) => {
+        // Skip updating if we are currently editing it? 
+        // For simplicity, we just update the blocks array via updateNote but without re-emitting
+        const newBlocks = note.blocks.map(b => b.id === blockId ? { ...b, content } : b);
+        updateNote(note.id, 'blocks', newBlocks, true); // Added 'true' to signal 'remote' update
+      });
+
+      socketRef.current.on('cursorUpdated', ({ blockId, cursor, senderId }) => {
+        setRemoteCursors(prev => ({ ...prev, [senderId]: { ...cursor, blockId } }));
+      });
+
+      socketRef.current.on('userLeft', ({ sessionId }) => {
+        setRemoteCursors(prev => {
+          const next = { ...prev };
+          delete next[sessionId];
+          return next;
+        });
+      });
+
+      return () => {
+        socketRef.current.disconnect();
+      };
+    } else {
+      setRemoteCursors({});
+    }
+  }, [isPartyMode, note.id, workspace.type]);
+
+  const emitCursor = (blockId, offset) => {
+    if (socketRef.current && isPartyMode) {
+      socketRef.current.emit('cursorMove', {
+        noteId: note.id,
+        blockId,
+        cursor: {
+          offset,
+          username: currentUser,
+          color: getUserColor(currentUser)
+        }
+      });
+    }
+  };
+
+  function getUserColor(name) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
+  }
 
   const addBlock = (index, type) => {
     if (isReadOnly) return;
@@ -249,6 +306,10 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
     if (isReadOnly) return;
     const newBlocks = blocks.map(b => b.id === blockId ? { ...b, content } : b);
     updateNote(note.id, 'blocks', newBlocks);
+
+    if (isPartyMode && socketRef.current) {
+      socketRef.current.emit('editBlock', { noteId: note.id, blockId, content, username: currentUser });
+    }
   };
 
   const removeBlock = (blockId) => {
@@ -317,6 +378,16 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
               <Share2 size={20} />
             </button>
           )}
+          {workspace.type === 'team' && (
+            <button
+              className={`btn ${isPartyMode ? 'btn-success' : 'btn-secondary'}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid var(--card-border)', marginRight: '0.5rem' }}
+              onClick={() => setIsPartyMode(!isPartyMode)}
+            >
+              <Sparkles size={18} className={isPartyMode ? 'animate-spin' : ''} />
+              {isPartyMode ? 'Parti Modu: AÇIK' : 'Parti Modu'}
+            </button>
+          )}
           {!isReadOnly && (
             <button
               className="btn-icon btn-danger"
@@ -351,7 +422,18 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
           {blocks.map((block, index) => {
             if (block.type === 'text') {
               return (
-                <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem' }}>
+                <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem', position: 'relative' }}>
+                  {Object.entries(remoteCursors).filter(([_, c]) => c.blockId === block.id).map(([sid, c]) => (
+                    <div key={sid} className="remote-cursor" style={{
+                      position: 'absolute',
+                      left: '20px',
+                      top: '10px',
+                      height: '24px',
+                      borderLeft: `2px solid ${c.color}`,
+                    }}>
+                      <div className="remote-cursor-label" style={{ backgroundColor: c.color }}>{c.username}</div>
+                    </div>
+                  ))}
                   {!isReadOnly && (
                     <div className="block-actions">
                       <button
@@ -376,8 +458,11 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                     value={block.content}
                     onChange={(e) => updateBlock(block.id, e.target.value)}
                     onInput={handleTextareaInput}
+                    onKeyUp={(e) => emitCursor(block.id, e.target.selectionStart)}
+                    onClick={(e) => emitCursor(block.id, e.target.selectionStart)}
                     placeholder={isReadOnly ? "" : "Metin ekleyin..."}
                     readOnly={isReadOnly}
+                    rows={1}
                   />
                   {!isReadOnly && (
                     <div className="inline-add-container">
@@ -391,7 +476,18 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
               );
             } else if (block.type === 'code') {
               return (
-                <div key={block.id} className="block-wrapper">
+                <div key={block.id} className="block-wrapper" style={{ position: 'relative' }}>
+                  {Object.entries(remoteCursors).filter(([_, c]) => c.blockId === block.id).map(([sid, c]) => (
+                    <div key={sid} className="remote-cursor" style={{
+                      position: 'absolute',
+                      left: '40px',
+                      top: '45px',
+                      height: '20px',
+                      borderLeft: `2px solid ${c.color}`,
+                    }}>
+                      <div className="remote-cursor-label" style={{ backgroundColor: c.color }}>{c.username}</div>
+                    </div>
+                  ))}
                   <div className="code-wrapper">
                     <div className="code-header">
                       <span>Kod Bloğu</span>
@@ -406,6 +502,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                             style={confirmDeleteBlockId === block.id ? { background: 'var(--danger-color)', color: '#fff', border: 'none', padding: '0.2rem 0.6rem' } : { padding: '0.2rem 0.4rem', border: 'none', background: 'rgba(255,255,255,0.05)' }}
                             onClick={() => {
                               if (block.content && block.content.trim().length > 0 && confirmDeleteBlockId !== block.id) {
+                                setConfirmDeleteNote(false); // reset
                                 setConfirmDeleteBlockId(block.id);
                                 setTimeout(() => setConfirmDeleteBlockId(null), 3000);
                               } else {
@@ -423,6 +520,8 @@ function NoteCard({ note, updateNote, deleteNote, currentUser }) {
                       <Editor
                         value={block.content}
                         onValueChange={(code) => updateBlock(block.id, code)}
+                        onKeyUp={(e) => emitCursor(block.id, e.target.selectionStart)}
+                        onClick={(e) => emitCursor(block.id, e.target.selectionStart)}
                         highlight={(code) => {
                           try { return Prism.highlight(code, Prism.languages.jsx || Prism.languages.javascript, 'jsx'); }
                           catch (e) { return code; }
@@ -595,8 +694,9 @@ function MainApp({ currentUser, onLogout }) {
     setSelectedNoteId(newNote.id);
   };
 
-  const updateNote = (id, field, value) => {
+  const updateNote = (id, field, value, isRemote = false) => {
     setNotes(notes.map(note => note.id === id ? { ...note, [field]: value } : note));
+    if (isRemote) initialMount.current = false; // Just to be safe but usually we want to save
   };
 
   const deleteNote = (id) => {
@@ -1011,6 +1111,7 @@ function MainApp({ currentUser, onLogout }) {
             updateNote={updateNote}
             deleteNote={deleteNote}
             currentUser={currentUser}
+            workspace={workspace}
           />
         ) : (
           <div className="empty-state animate-fade-in">

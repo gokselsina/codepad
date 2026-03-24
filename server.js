@@ -1,4 +1,6 @@
 import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
@@ -11,8 +13,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// --- Real-time Multiplayer (Party Mode) ---
+const activeUsers = {}; // socket.id -> { username, noteId }
+
+io.on('connection', (socket) => {
+    socket.on('joinNote', ({ username, noteId }) => {
+        socket.join(`note_${noteId}`);
+        activeUsers[socket.id] = { username, noteId };
+        socket.to(`note_${noteId}`).emit('userJoined', { username });
+    });
+
+    socket.on('editBlock', ({ noteId, blockId, content, username }) => {
+        socket.to(`note_${noteId}`).emit('blockUpdated', { blockId, content, sender: username });
+    });
+
+    socket.on('cursorMove', ({ noteId, blockId, cursor }) => {
+        // cursor: { offset, username, color }
+        socket.to(`note_${noteId}`).emit('cursorUpdated', { blockId, cursor, senderId: socket.id });
+    });
+
+    socket.on('disconnect', () => {
+        const user = activeUsers[socket.id];
+        if (user) {
+            socket.to(`note_${user.noteId}`).emit('userLeft', { username: user.username, sessionId: socket.id });
+            delete activeUsers[socket.id];
+        }
+    });
+});
 
 const dbPath = path.join(__dirname, 'codepad.sqlite');
 let db;
@@ -376,7 +413,7 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3001;
 
 setupDatabase().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`🚀 Kod Defteri API ve (SQLite) Sunucu port ${PORT} üzerinde başlatıldı.`);
+    httpServer.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Kod Defteri API (SQLite + WebSockets) port ${PORT} üzerinde başlatıldı.`);
     });
 }).catch(console.error);
