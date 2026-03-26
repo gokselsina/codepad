@@ -590,15 +590,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                       </div>
                     </div>
                   )}
-
-                  {!isReadOnly && (
-                    <div className="inline-add-container">
-                      <div className="inline-add-actions">
-                        <button className="inline-add-btn" onClick={() => addBlock(index, 'text')}><Type size={14} /> Metin</button>
-                        <button className="inline-add-btn" onClick={() => addBlock(index, 'code')}><Code size={14} /> Kod</button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             }
