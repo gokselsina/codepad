@@ -348,10 +348,24 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
 
   const [copiedBlockId, setCopiedBlockId] = useState(null);
 
-  const handleCopy = (blockId, content) => {
-    navigator.clipboard.writeText(content);
-    setCopiedBlockId(blockId);
-    setTimeout(() => setCopiedBlockId(null), 2000);
+  const handleCopy = async (blockId, content) => {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(content);
+      } else {
+        // Fallback: create a temporary textarea
+        const textArea = document.createElement("textarea");
+        textArea.value = content;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedBlockId(blockId);
+      setTimeout(() => setCopiedBlockId(null), 2000);
+    } catch (err) {
+      console.error("Kopyalama Hatası:", err);
+    }
   };
 
   const handlePasteCode = (e, blockId, currentContent) => {
