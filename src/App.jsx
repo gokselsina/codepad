@@ -1,16 +1,53 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette } from 'lucide-react';
-import EditorModule from 'react-simple-code-editor';
-const Editor = EditorModule.default || EditorModule;
-import Prism from 'prismjs';
-import 'prismjs/components/prism-clike';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-markup';
-import 'prismjs/components/prism-jsx';
-import 'prismjs/themes/prism-tomorrow.css';
+import Editor, { loader } from '@monaco-editor/react';
 import js_beautify from 'js-beautify';
+
+// Monaco PL/SQL Desteği Tanımlaması
+loader.init().then((monaco) => {
+  monaco.languages.register({ id: 'plsql' });
+  monaco.languages.setMonarchTokensProvider('plsql', {
+    ignoreCase: true,
+    keywords: [
+      'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'NULL',
+      'BEGIN', 'END', 'IF', 'THEN', 'ELSE', 'ELSIF', 'DECLARE', 'EXCEPTION', 'WHEN', 'OTHERS',
+      'PROCEDURE', 'FUNCTION', 'PACKAGE', 'BODY', 'CURSOR', 'OPEN', 'FETCH', 'CLOSE', 'LOOP',
+      'EXIT', 'RETURN', 'COMMIT', 'ROLLBACK', 'PRAGMA', 'TYPE', 'RECORD', 'TABLE', 'INDEX',
+      'VARCHAR2', 'NUMBER', 'DATE', 'BOOLEAN', 'IN', 'OUT', 'INOUT', 'IS', 'AS', 'CONSTANT',
+      'FOR', 'WHILE', 'EXECUTE', 'IMMEDIATE', 'TRIGGER', 'CREATE', 'REPLACE', 'DROP', 'ALTER',
+      'UNION', 'ALL', 'EXISTS', 'IN', 'BETWEEN', 'LIKE', 'INTO', 'VALUES', 'SET'
+    ],
+    operators: ['=', '>', '<', '>=', '<=', '<>', '!=', ':=', '||', '+', '-', '*', '/'],
+    symbols: /[=><!~?:&|+\-*\/\^%]+/,
+    tokenizer: {
+      root: [
+        [/[a-zA-Z_$][\w$]*/, {
+          cases: {
+            '@keywords': 'keyword',
+            '@default': 'identifier'
+          }
+        }],
+        [/[()\[\]]/, '@brackets'],
+        [/--.*$/, 'comment'],
+        [/\/\*/, 'comment', '@comment'],
+        [/'/, 'string', '@string'],
+        [/[0-9]+/, 'number'],
+        [/:[a-zA-Z_$][\w$]*/, 'variable.parameter'],
+        [/@symbols/, 'operators']
+      ],
+      comment: [
+        [/[^\/*]+/, 'comment'],
+        [/\*\//, 'comment', '@pop'],
+        [/[\/*]/, 'comment']
+      ],
+      string: [
+        [/[^']+/, 'string'],
+        [/'/, 'string', '@pop']
+      ]
+    }
+  });
+});
 
 import './App.css';
 
@@ -314,9 +351,19 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     return `hsl(${Math.abs(hash) % 360}, 70%, 60%)`;
   }
 
+  const setBlockLanguage = (blockId, language) => {
+    if (isReadOnly) return;
+    const newBlocks = blocks.map(b => b.id === blockId ? { ...b, language } : b);
+    updateNote(note.id, 'blocks', newBlocks);
+
+    if (isPartyMode && socketRef.current) {
+      socketRef.current.emit('blocksChanged', { noteId: note.id, blocks: newBlocks, username: currentUser });
+    }
+  };
+
   const addBlock = (index, type) => {
     if (isReadOnly) return;
-    const newBlock = { id: Date.now().toString() + Math.random(), type, content: '' };
+    const newBlock = { id: Date.now().toString() + Math.random(), type, content: '', language: type === 'code' ? 'javascript' : undefined };
     const newBlocks = [...blocks];
     newBlocks.splice(index + 1, 0, newBlock);
     updateNote(note.id, 'blocks', newBlocks);
@@ -542,7 +589,23 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                   })}
                   <div className="code-wrapper">
                     <div className="code-header">
-                      <span>Kod Bloğu</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <select
+                          className="theme-select-lite"
+                          value={block.language || 'javascript'}
+                          onChange={(e) => setBlockLanguage(block.id, e.target.value)}
+                          disabled={isReadOnly}
+                        >
+                          <option value="javascript">JavaScript</option>
+                          <option value="plsql">PL/SQL (Oracle)</option>
+                          <option value="sql">SQL (General)</option>
+                          <option value="python">Python</option>
+                          <option value="html">HTML</option>
+                          <option value="css">CSS</option>
+                          <option value="json">JSON</option>
+                          <option value="markdown">Markdown</option>
+                        </select>
+                      </div>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <button className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleCopy(block.id, block.content)}>
                           {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
@@ -570,28 +633,19 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                     </div>
                     <div className="code-editor-container">
                       <Editor
+                        height="200px"
+                        language={block.language || 'javascript'}
+                        theme="vs-dark"
                         value={block.content}
-                        onValueChange={(code) => updateBlock(block.id, code)}
-                        onKeyUp={(e) => emitCursor(block.id, e.target.selectionStart)}
-                        onClick={(e) => emitCursor(block.id, e.target.selectionStart)}
-                        highlight={(code) => {
-                          try { return Prism.highlight(code, Prism.languages.jsx || Prism.languages.javascript, 'jsx'); }
-                          catch (e) { return code; }
-                        }}
-                        padding={16}
-                        disabled={isReadOnly}
-                        style={{
-                          fontFamily: '"JetBrains Mono", monospace',
+                        onChange={(val) => updateBlock(block.id, val || '')}
+                        options={{
+                          minimap: { enabled: false },
                           fontSize: 14,
-                          minHeight: '100px',
-                          backgroundColor: '#1e1e1e',
-                          minWidth: '100%',
-                          width: 'max-content',
-                          opacity: isReadOnly ? 0.8 : 1
-                        }}
-                        textareaProps={{
-                          onPaste: (e) => handlePasteCode(e, block.id, block.content),
-                          placeholder: isReadOnly ? "" : "Kodu buraya yapıştırın, otomatik formatlanacaktır..."
+                          fontFamily: '"JetBrains Mono", monospace',
+                          automaticLayout: true,
+                          scrollBeyondLastLine: false,
+                          readOnly: isReadOnly,
+                          padding: { top: 10, bottom: 10 }
                         }}
                       />
                     </div>

@@ -664,7 +664,7 @@ textarea {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 1rem 0.6rem 4.5rem;
+  padding: 0.6rem 1rem 0.6rem 3.8rem;
   background-color: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--card-border);
   font-family: 'JetBrains Mono', monospace;
@@ -676,14 +676,36 @@ textarea {
 .code-header::before {
   content: '';
   position: absolute;
-  left: 1rem;
+  left: 0.8rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background-color: #ff5f56;
-  box-shadow: 20px 0 0 #ffbd2e, 40px 0 0 #27c93f;
+  box-shadow: 16px 0 0 #ffbd2e, 32px 0 0 #27c93f;
+}
+
+.theme-select-lite {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.theme-select-lite:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.theme-select-lite option {
+  background: #1f2937;
+  color: #fff;
 }
 
 .code-editor-container {
