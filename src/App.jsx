@@ -351,7 +351,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
   const handleCopy = (blockId, content) => {
     navigator.clipboard.writeText(content);
     setCopiedBlockId(blockId);
-    setTimeout(() => setCopiedBlockId(null), 1000);
+    setTimeout(() => setCopiedBlockId(null), 2000);
   };
 
   const handlePasteCode = (e, blockId, currentContent) => {

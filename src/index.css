@@ -1087,20 +1087,18 @@ textarea {
   background-color: var(--success-color);
   color: #fff;
   border-color: transparent;
-  animation: copiedBounce 0.2s ease-out;
+  animation: copiedPulse 0.4s ease-out infinite alternate;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
 }
 
-@keyframes copiedBounce {
-  0% {
+@keyframes copiedPulse {
+  from {
     transform: scale(1);
   }
 
-  50% {
-    transform: scale(1.1);
-  }
-
-  100% {
-    transform: scale(1);
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
   }
 }
 
