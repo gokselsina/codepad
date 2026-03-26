@@ -432,36 +432,6 @@ app.post('/api/teams/collection/:teamId', async (req, res) => {
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// --- AI COPILOT (Ollama Proxy) ---
-app.post('/api/ai/generate', async (req, res) => {
-    const { prompt, model, system } = req.body;
-    const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434/api/generate';
-
-    try {
-        const response = await fetch(OLLAMA_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: model || 'codellama',
-                prompt: prompt,
-                system: system || 'Sen Codepad için bir yardımcı yapay zekasın. Kesin ve yardımcı ol.',
-                stream: false
-            })
-        });
-
-        if (!response.ok) {
-            const errText = await response.text();
-            return res.status(response.status).json({ error: `Ollama hatası: ${errText}` });
-        }
-
-        const data = await response.json();
-        res.json({ response: data.response });
-    } catch (e) {
-        console.error("AI Hatası:", e);
-        res.status(500).json({ error: 'Ollama sunucusuna bağlanılamadı. Ollama çalışıyor mu? (Gereken: http://localhost:11434)' });
-    }
-});
-
 // SPA fallback for routing
 app.use((req, res) => {
     if (req.method === 'GET') {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Wand2, Loader2 } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette } from 'lucide-react';
 import EditorModule from 'react-simple-code-editor';
 const Editor = EditorModule.default || EditorModule;
 import Prism from 'prismjs';
@@ -231,10 +231,7 @@ function ShareModal({ isOpen, onClose, note, updateNote, currentUser }) {
   );
 }
 
-function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForcedParty, aiModel }) {
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState(null);
-  const [activeAiBlockId, setActiveAiBlockId] = useState(null);
+function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForcedParty }) {
   const blocks = note.blocks || [];
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [confirmDeleteNote, setConfirmDeleteNote] = useState(false);
@@ -382,43 +379,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     e.target.style.height = e.target.scrollHeight + 'px';
   };
 
-  const handleAIAction = async (blockId, actionType) => {
-    const block = blocks.find(b => b.id === blockId);
-    if (!block || !block.content.trim()) return;
-
-    setAiLoading(true);
-    setActiveAiBlockId(blockId);
-    setAiResponse(null);
-
-    let systemPrompt = '';
-    let userPrompt = '';
-
-    if (actionType === 'explain') {
-      systemPrompt = "Sen tecrübeli bir yazılım geliştiricisin. Sana verilen kodu veya metni teknik detayları atlamadan fakat anlaşılır şekilde açıkla.";
-      userPrompt = `Şu içeriği açıkla:\n\n${block.content}`;
-    } else if (actionType === 'fix') {
-      systemPrompt = "Sen bir hata avcısısın. Verilen koddaki hataları bul ve sadece düzeltilmiş haliyle birlikte kısa bir açıklama ver.";
-      userPrompt = `Şu koddaki hataları düzelt:\n\n${block.content}`;
-    } else if (actionType === 'improve') {
-      systemPrompt = "Sen bir teknik yazar ve editörsün. Verilen metni veya kodu daha kaliteli, okunabilir ve profesyonel hale getir.";
-      userPrompt = `Şu içeriği geliştir:\n\n${block.content}`;
-    }
-
-    try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userPrompt, system: systemPrompt, model: aiModel })
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setAiResponse(data.response);
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   return (
     <>
@@ -490,7 +450,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
             </div>
           )}
           {blocks.map((block, index) => {
-            const isAiActive = activeAiBlockId === block.id;
             if (block.type === 'text') {
               return (
                 <div key={block.id} className="block-wrapper" style={{ paddingBottom: '0.5rem', position: 'relative' }}>
@@ -511,7 +470,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                   })}
                   {!isReadOnly && (
                     <div className="block-actions">
-                      <button className="block-btn" onClick={() => handleAIAction(block.id, 'explain')} title="Açıkla"><Wand2 size={14} /></button>
                       <button
                         className="block-btn block-btn-danger"
                         style={confirmDeleteBlockId === block.id ? { background: 'var(--danger-color)', color: '#fff', border: 'none' } : {}}
@@ -572,12 +530,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                     <div className="code-header">
                       <span>Kod Bloğu</span>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(139, 92, 246, 0.1)', color: '#c084fc', border: '1px solid rgba(139, 92, 246, 0.2)' }} onClick={() => handleAIAction(block.id, 'fix')}>
-                          <Sparkles size={14} /> Düzelt
-                        </button>
-                        <button className="btn btn-secondary" style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)' }} onClick={() => handleAIAction(block.id, 'explain')}>
-                          <Wand2 size={14} /> Açıkla
-                        </button>
                         <button className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleCopy(block.id, block.content)}>
                           {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
                           {copiedBlockId === block.id ? 'Kopyalandı' : 'Kopyala'}
@@ -636,48 +588,6 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                         <button className="inline-add-btn" onClick={() => addBlock(index, 'text')}><Type size={14} /> Metin</button>
                         <button className="inline-add-btn" onClick={() => addBlock(index, 'code')}><Code size={14} /> Kod</button>
                       </div>
-                    </div>
-                  )}
-                  {isAiActive && (aiLoading || aiResponse) && (
-                    <div className="ai-response-area animate-fade-in" style={{
-                      marginTop: '1rem',
-                      background: 'rgba(139, 92, 246, 0.05)',
-                      border: '1px solid rgba(139, 92, 246, 0.2)',
-                      borderRadius: '12px',
-                      overflow: 'hidden'
-                    }}>
-                      <div className="ai-response-header" style={{ padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(139, 92, 246, 0.1)', borderBottom: '1px solid rgba(139, 92, 246, 0.1)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Wand2 size={16} color="#c084fc" className={aiLoading ? 'animate-pulse' : ''} />
-                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: '#c084fc' }}>AI Yardımcı</span>
-                        </div>
-                        <X size={16} style={{ cursor: 'pointer', opacity: 0.6 }} onClick={() => { setActiveAiBlockId(null); setAiResponse(null); }} />
-                      </div>
-                      <div className="ai-response-body" style={{ padding: '1rem' }}>
-                        {aiLoading ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <Loader2 size={24} className="animate-spin" color="#c084fc" />
-                            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Düşünüyorum...</span>
-                          </div>
-                        ) : (
-                          <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.9rem', color: '#e5e7eb', lineHeight: '1.6' }}>
-                            {aiResponse}
-                          </div>
-                        )}
-                      </div>
-                      {!aiLoading && aiResponse && (
-                        <div className="ai-response-footer" style={{ padding: '0.75rem 1rem', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(139, 92, 246, 0.1)' }}>
-                          <button className="btn btn-primary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }} onClick={() => {
-                            if (block.type === 'text') {
-                              updateBlock(block.id, block.content + "\n\n--- AI Önerisi ---\n" + aiResponse);
-                            } else {
-                              updateBlock(block.id, block.content + "\n\n/* AI Önerisi:\n" + aiResponse + "\n*/");
-                            }
-                            setActiveAiBlockId(null);
-                            setAiResponse(null);
-                          }}>Uygula/Ekle</button>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -856,20 +766,6 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange }) {
                 ))}
               </div>
 
-              <h4 style={{ marginTop: '2rem' }}>Yapay Zeka (Ollama)</h4>
-              <div className="form-group">
-                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'block' }}>Kullanılacak Model</label>
-                <input
-                  className="form-control"
-                  value={localStorage.getItem('codepad-ai-model') || 'codellama'}
-                  onChange={(e) => {
-                    localStorage.setItem('codepad-ai-model', e.target.value);
-                    window.dispatchEvent(new Event('storage')); // trigger update if needed
-                  }}
-                  placeholder="örn: codellama, llama3, mistral"
-                />
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.4rem' }}>Ollama'da yüklü olan model adını yazın.</p>
-              </div>
             </div>
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -895,15 +791,6 @@ function MainApp({ currentUser, onLogout }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('codepad-theme') || '');
-  const [aiModel, setAiModel] = useState(() => localStorage.getItem('codepad-ai-model') || 'codellama');
-
-  useEffect(() => {
-    const handleStorage = () => {
-      setAiModel(localStorage.getItem('codepad-ai-model') || 'codellama');
-    };
-    window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
-  }, []);
 
   useEffect(() => {
     // Remove all possible theme classes
@@ -1548,7 +1435,6 @@ function MainApp({ currentUser, onLogout }) {
             currentUser={currentUser}
             workspace={workspace}
             isForcedParty={true}
-            aiModel={aiModel}
           />
         ) : selectedNote ? (
           <NoteCard
@@ -1557,7 +1443,6 @@ function MainApp({ currentUser, onLogout }) {
             deleteNote={deleteNote}
             currentUser={currentUser}
             workspace={workspace}
-            aiModel={aiModel}
           />
         ) : (
           <div className="empty-state animate-fade-in">
