@@ -134,22 +134,37 @@ const GuiSqlInterceptorPlugin = {
 
                     {/* Browser / Work Area */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
-                        <div style={{ flex: 1, background: '#111', borderRadius: '12px', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', textAlign: 'center' }}>
-                            <Globe size={48} style={{ opacity: 0.1, marginBottom: '1rem' }} />
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', maxWidth: '400px', marginBottom: '1.5rem' }}>
-                                Kentkart GUI (Portal) ekranı burada çalışacak. DEBUG=1 ile gelen servis çıktısını buraya yapıştırın:
-                            </p>
-                            <div className="glass-card" style={{ width: '100%', padding: '1rem', borderStyle: 'dashed' }}>
-                                <textarea
-                                    className="input-field"
-                                    style={{ width: '100%', height: '120px', fontFamily: 'monospace', fontSize: '11px' }}
-                                    placeholder='{"sqlString": "...", "sqlParams": {...}}'
-                                    value={manualInput}
-                                    onChange={(e) => setManualInput(e.target.value)}
-                                />
-                                <button className="btn btn-primary" style={{ width: '100%', marginTop: '0.8rem' }} onClick={() => { processSqlData(manualInput); setManualInput(''); }}>
-                                    Sorguyu Analiz Et
-                                </button>
+                        <div style={{ flex: 1, background: '#111', borderRadius: '12px', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
+                            <iframe
+                                src={url}
+                                style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }}
+                                title="Kentkart GUI"
+                            />
+
+                            {/* Floating manual input for convenience */}
+                            <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div className="glass-card" style={{ padding: '0.8rem', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', border: '1px solid var(--accent-color)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--accent-color)' }}>DEBUG=1 JSON Yakala</span>
+                                        <button className="btn-icon" onClick={() => setManualInput('')} style={{ padding: '2px' }}><RefreshCw size={12} /></button>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <textarea
+                                            className="input-field"
+                                            style={{ flex: 1, height: '40px', fontFamily: 'monospace', fontSize: '10px', background: 'rgba(255,255,255,0.05)' }}
+                                            placeholder='JSON verisini buraya yapıştırın...'
+                                            value={manualInput}
+                                            onChange={(e) => setManualInput(e.target.value)}
+                                        />
+                                        <button
+                                            className="btn btn-primary"
+                                            style={{ padding: '0 1rem', fontSize: '0.75rem' }}
+                                            onClick={() => { if (manualInput) { processSqlData(manualInput); setManualInput(''); } }}
+                                        >
+                                            Çevir
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
