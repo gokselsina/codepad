@@ -123,9 +123,6 @@ const GuiSqlInterceptorPlugin = {
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '0.8rem' }}>
-                        <button className="btn btn-primary" onClick={() => { if (manualInput) processSqlData(manualInput); }} style={{ padding: '0.5rem 1.2rem', fontSize: '0.8rem', gap: '0.5rem', opacity: manualInput ? 1 : 0.5 }}>
-                            <Zap size={14} /> Şimdi Çevir
-                        </button>
                     </div>
                 </div>
 
@@ -162,6 +159,22 @@ const GuiSqlInterceptorPlugin = {
                                     }
                                 }}
                             />
+                            <button
+                                className="btn btn-primary"
+                                onClick={() => { if (manualInput) processSqlData(manualInput); }}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.8rem',
+                                    fontSize: '0.9rem',
+                                    gap: '0.6rem',
+                                    opacity: manualInput ? 1 : 0.5,
+                                    background: 'linear-gradient(to right, var(--accent-color), #4f46e5)',
+                                    border: 'none',
+                                    boxShadow: '0 4px 12px rgba(139, 92, 246, 0.2)'
+                                }}
+                            >
+                                <Zap size={18} /> Şimdi Çevir ve Sorguyu Çıkar
+                            </button>
                         </div>
 
                         {/* Lower: Formatted Output Area */}
