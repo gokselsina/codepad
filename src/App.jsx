@@ -1514,17 +1514,13 @@ function MainApp({ currentUser, onLogout }) {
                           </div>
                           {!n.isShared && (
                             <button
-                              className={`note-win-btn ${isWindowOpen ? 'active' : ''}`}
+                              className="note-win-btn"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (isWindowOpen) {
-                                  setActiveWindowId(n.id);
-                                } else {
-                                  setOpenWindows([...openWindows, n.id]);
-                                  setActiveWindowId(n.id);
-                                }
+                                const url = `${window.location.origin}/note/${n.id}`;
+                                window.open(url, `_blank`, 'width=1000,height=800');
                               }}
-                              title="Pencerede Aç"
+                              title="Yeni Sekmede Aç"
                             >
                               <ExternalLink size={12} />
                             </button>
@@ -1609,25 +1605,58 @@ function MainApp({ currentUser, onLogout }) {
         onSelect={handleSpotlightSelect}
       />
 
-      <div className="windows-container">
-        {openWindows.map((winId, index) => {
-          const winNote = notes.find(n => n.id === winId);
-          if (!winNote) return null;
-          return (
-            <Window
-              key={winId}
-              note={winNote}
-              onClose={(id) => setOpenWindows(openWindows.filter(w => w !== id))}
-              onFocus={() => setActiveWindowId(winId)}
-              zIndex={activeWindowId === winId ? 1000 : 100 + index}
-              updateNote={updateNote}
-              deleteNote={deleteNote}
-              currentUser={currentUser}
-              workspace={workspace}
-            />
-          );
-        })}
-      </div>
+    </div>
+  );
+}
+
+function NoteWindow({ noteId, currentUser }) {
+  const [note, setNote] = useState(null);
+  const [workspace, setWorkspace] = useState({ type: 'personal', id: currentUser });
+  const [loading, setLoading] = useState(true);
+
+  const loadNote = async () => {
+    try {
+      const endpoint = `/api/collection/${currentUser}`;
+      const res = await fetch(endpoint);
+      const data = await res.json();
+      const found = data.notes.find(n => n.id === noteId);
+      setNote(found);
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadNote();
+    const handleStorageChange = (e) => {
+      if (e.key === 'codepad-refresh') {
+        loadNote();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [noteId, currentUser]);
+
+  const updateNote = async (id, field, value) => {
+    setNote(prev => ({ ...prev, [field]: value }));
+    // In a real app we'd save to DB here.
+    // For now, let's trigger a refresh in other windows
+    localStorage.setItem('codepad-refresh', Date.now().toString());
+  };
+
+  if (loading) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Yükleniyor...</div>;
+  if (!note) return <div style={{ padding: '2rem', color: 'var(--danger-color)' }}>Not bulunamadı.</div>;
+
+  return (
+    <div className="note-window-standalone" style={{ padding: '2rem', height: '100vh', overflowY: 'auto', background: 'var(--bg-color)' }}>
+      <NoteCard
+        note={note}
+        updateNote={updateNote}
+        deleteNote={() => window.close()}
+        currentUser={currentUser}
+        workspace={workspace}
+      />
     </div>
   );
 }
@@ -1636,6 +1665,10 @@ function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     return localStorage.getItem('codepad-currentUser') || null;
   });
+
+  const path = window.location.pathname;
+  const isNoteView = path.startsWith('/note/');
+  const noteId = isNoteView ? path.split('/').pop() : null;
 
   const handleLogin = (username) => {
     localStorage.setItem('codepad-currentUser', username);
@@ -1649,6 +1682,10 @@ function App() {
 
   if (!currentUser) {
     return <AuthScreen onLogin={handleLogin} />;
+  }
+
+  if (isNoteView && noteId) {
+    return <NoteWindow noteId={noteId} currentUser={currentUser} />;
   }
 
   return <MainApp key={currentUser} currentUser={currentUser} onLogout={handleLogout} />;

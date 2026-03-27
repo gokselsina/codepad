@@ -433,6 +433,10 @@ app.post('/api/teams/collection/:teamId', async (req, res) => {
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // SPA fallback for routing
+app.get('/note/*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
+
 app.use((req, res) => {
     if (req.method === 'GET') {
         res.sendFile(path.join(__dirname, 'dist', 'index.html'));
