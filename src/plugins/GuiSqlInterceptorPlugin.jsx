@@ -6,6 +6,7 @@ const GuiSqlInterceptorPlugin = {
     name: 'KK GUI SQL Interceptor',
     icon: <Globe size={16} />,
     component: () => {
+        const [portalUrl, setPortalUrl] = useState('https://gui.kentkart.com.tr/portal');
         const [history, setHistory] = useState([]);
         const [lastResult, setLastResult] = useState(null);
         const [copied, setCopied] = useState(false);
@@ -110,22 +111,35 @@ const GuiSqlInterceptorPlugin = {
 
                 {/* Header - Control Center */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(139, 92, 246, 0.05)', padding: '1rem 1.5rem', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
                         <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--accent-color), #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Globe size={24} color="#fff" />
                         </div>
-                        <div>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0 }}>KK GUI SQL Interceptor</h2>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                                <Activity size={12} color="#4ade80" />
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Portal Dinleme Modu Aktif (Split-View)</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0, whiteSpace: 'nowrap' }}>KK GUI SQL Interceptor</h2>
+                                <div style={{ flex: 1, maxWidth: '500px', position: 'relative' }}>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        style={{ width: '100%', paddingLeft: '2.5rem', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', color: '#60a5fa' }}
+                                        value={portalUrl}
+                                        onChange={(e) => setPortalUrl(e.target.value)}
+                                        placeholder="Açılacak Portal Linkini Yapıştırın..."
+                                    />
+                                    <Search size={14} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.8rem' }}>
-                        <a href="https://gui.kentkart.com.tr/portal" target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.8rem', marginLeft: '1rem' }}>
+                        <button
+                            className="btn btn-secondary"
+                            onClick={() => window.open(portalUrl, '_blank')}
+                            style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', gap: '0.5rem' }}
+                        >
                             <ExternalLink size={14} /> Portalı Aç
-                        </a>
+                        </button>
                         <button className="btn btn-primary" onClick={() => { if (manualInput) processSqlData(manualInput); }} style={{ padding: '0.5rem 1.2rem', fontSize: '0.8rem', gap: '0.5rem', opacity: manualInput ? 1 : 0.5 }}>
                             <Zap size={14} /> Şimdi Çevir
                         </button>
