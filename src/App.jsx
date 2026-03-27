@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink, ChevronDown, ChevronUp, Puzzle } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import Editor, { loader } from '@monaco-editor/react';
 import js_beautify from 'js-beautify';
@@ -1021,6 +1021,45 @@ function MainApp({ currentUser, onLogout }) {
   const [partyNote, setPartyNote] = useState(null);
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
 
+  // Plugins Logic
+  const [plugins, setPlugins] = useState([]);
+  const [activePluginId, setActivePluginId] = useState(null);
+  const [isStoreOpen, setIsStoreOpen] = useState(false);
+  const [userInstalledPlugins, setUserInstalledPlugins] = useState([]);
+
+  useEffect(() => {
+    // Vite glob import to find all plugins
+    const pluginModules = import.meta.glob('./plugins/*.jsx', { eager: true });
+    const loadedPlugins = Object.values(pluginModules).map(m => m.default);
+    setPlugins(loadedPlugins);
+
+    // Fetch user installed plugins from server
+    fetch(`/api/users/${currentUser}/plugins`)
+      .then(res => res.json())
+      .then(data => setUserInstalledPlugins(data))
+      .catch(err => console.error("Eklenti listesi hatası:", err));
+  }, [currentUser]);
+
+  const togglePluginInstall = (pluginId) => {
+    const isInstalled = userInstalledPlugins.includes(pluginId);
+    const method = isInstalled ? 'DELETE' : 'POST';
+    const url = isInstalled ? `/api/users/${currentUser}/plugins/${pluginId}` : `/api/users/${currentUser}/plugins`;
+
+    fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plugin_id: pluginId })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setUserInstalledPlugins(prev =>
+            isInstalled ? prev.filter(id => id !== pluginId) : [...prev, pluginId]
+          );
+        }
+      });
+  };
+
   useEffect(() => {
     const handleGlobalKbd = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -1443,6 +1482,53 @@ function MainApp({ currentUser, onLogout }) {
         </div>
       )}
 
+      {isStoreOpen && (
+        <div className="modal-overlay" onClick={() => setIsStoreOpen(false)}>
+          <div className="modal-content glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                <Puzzle size={24} color="var(--accent-color)" />
+                <h3 style={{ margin: 0 }}>Eklenti Mağazası</h3>
+              </div>
+              <button className="btn-icon" onClick={() => setIsStoreOpen(false)}><X size={20} /></button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', padding: '0.5rem' }}>
+              {plugins.map(plugin => {
+                const isInstalled = userInstalledPlugins.includes(plugin.id);
+                return (
+                  <div key={plugin.id} className="glass-card" style={{ padding: '1.2rem', borderRadius: '12px', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: '1rem', transition: 'transform 0.2s', cursor: 'default' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {plugin.icon || <Puzzle size={20} />}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1rem' }}>{plugin.name}</h4>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>v1.0.0</span>
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                      {plugin.id === 'sql-placeholder-fixer' ? 'Karmaşık SQL çıktılarını analiz eder ve parametreleri otomatik olarak birleştirir.' : 'Uygulama işlevselliğini artıran modüler bir eklenti.'}
+                    </p>
+                    <button
+                      className={`btn ${isInstalled ? 'btn-danger' : 'btn-primary'}`}
+                      style={{ width: '100%', marginTop: 'auto', padding: '0.5rem', background: isInstalled ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-color)', borderColor: isInstalled ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: isInstalled ? '#ef4444' : '#fff' }}
+                      onClick={() => togglePluginInstall(plugin.id)}
+                    >
+                      {isInstalled ? 'Kaldır' : 'Yükle'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+              <button className="btn btn-secondary" onClick={() => setIsStoreOpen(false)}>Kapat</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className={`sidebar animate-fade-in ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1517,9 +1603,50 @@ function MainApp({ currentUser, onLogout }) {
           </div>
         </div>
 
-        <button className="add-category-btn" onClick={() => { setIsPartyRoomActive(false); setEditingFolderId(null); setIsModalOpen(true); }}>
+        <button className="add-category-btn" onClick={() => { setIsPartyRoomActive(false); setActivePluginId(null); setEditingFolderId(null); setIsModalOpen(true); }}>
           <Plus size={18} /> Yeni Kategori Ekle
         </button>
+
+        {plugins.length > 0 && (
+          <div className="plugins-section" style={{ marginTop: '1.5rem' }}>
+            <div className="folder-header" style={{ color: 'var(--accent-color)', opacity: 0.8, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 0.5rem 0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Eklentiler</span>
+              <button
+                className="btn-icon"
+                onClick={() => setIsStoreOpen(true)}
+                title="Eklenti Mağazası"
+                style={{ padding: '2px', background: 'rgba(139, 92, 246, 0.15)', borderRadius: '4px' }}
+              >
+                <Plus size={12} color="var(--accent-color)" />
+              </button>
+            </div>
+            {plugins.filter(p => userInstalledPlugins.includes(p.id)).map(plugin => (
+              <div
+                key={plugin.id}
+                className={`tree-note-item ${activePluginId === plugin.id ? 'active' : ''}`}
+                onClick={() => {
+                  setActivePluginId(plugin.id);
+                  setSelectedNoteId(null);
+                  setIsPartyRoomActive(false);
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {plugin.icon || <Puzzle size={14} />}
+                  <span>{plugin.name}</span>
+                </div>
+              </div>
+            ))}
+            {userInstalledPlugins.length === 0 && (
+              <div
+                onClick={() => setIsStoreOpen(true)}
+                style={{ padding: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', cursor: 'pointer', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '6px', margin: '0 0.5rem' }}
+              >
+                Eklenti yüklemek için tıklayın
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="note-tree">
           {folders.map(folder => {
@@ -1588,6 +1715,7 @@ function MainApp({ currentUser, onLogout }) {
                           onClick={() => {
                             setSelectedNoteId(n.id);
                             setIsPartyRoomActive(false);
+                            setActivePluginId(null);
                           }}
                           draggable={!n.isShared}
                           onDragStart={(e) => handleNoteDragStart(e, n.id)}
@@ -1653,7 +1781,14 @@ function MainApp({ currentUser, onLogout }) {
           </div>
         </header>
 
-        {isPartyRoomActive && partyNote ? (
+        {activePluginId ? (
+          <div className="plugin-wrapper animate-fade-in" style={{ flex: 1, overflow: 'auto' }}>
+            {(() => {
+              const PluginComp = plugins.find(p => p.id === activePluginId)?.component;
+              return PluginComp ? <PluginComp /> : <div>Eklenti bulunamadı.</div>;
+            })()}
+          </div>
+        ) : isPartyRoomActive && partyNote ? (
           <NoteCard
             note={partyNote}
             updateNote={updateNotePartyRoom}

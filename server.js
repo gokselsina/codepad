@@ -97,6 +97,11 @@ async function setupDatabase() {
             shared_with TEXT,
             sort_order INTEGER
         );
+        CREATE TABLE IF NOT EXISTS user_plugins (
+            username TEXT,
+            plugin_id TEXT,
+            PRIMARY KEY (username, plugin_id)
+        );
     `);
 
     // Migration Script
@@ -425,6 +430,35 @@ app.post('/api/teams/collection/:teamId', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         await db.run('ROLLBACK');
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- Plugins API ---
+app.get('/api/users/:username/plugins', async (req, res) => {
+    try {
+        const plugins = await db.all('SELECT plugin_id FROM user_plugins WHERE username = ?', [req.params.username]);
+        res.json(plugins.map(p => p.plugin_id));
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.post('/api/users/:username/plugins', async (req, res) => {
+    try {
+        const { plugin_id } = req.body;
+        await db.run('INSERT OR IGNORE INTO user_plugins (username, plugin_id) VALUES (?, ?)', [req.params.username, plugin_id]);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.delete('/api/users/:username/plugins/:plugin_id', async (req, res) => {
+    try {
+        await db.run('DELETE FROM user_plugins WHERE username = ? AND plugin_id = ?', [req.params.username, req.params.plugin_id]);
+        res.json({ success: true });
+    } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
