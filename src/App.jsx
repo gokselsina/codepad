@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
+import { Rnd } from 'react-rnd';
 import Editor, { loader } from '@monaco-editor/react';
 import js_beautify from 'js-beautify';
 
@@ -837,6 +838,63 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange }) {
   );
 }
 
+function Window({ note, onClose, onFocus, zIndex, updateNote, deleteNote, currentUser, workspace }) {
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  const toggleMaximize = () => {
+    setIsMaximized(!isMaximized);
+  };
+
+  return (
+    <Rnd
+      default={{
+        x: 100 + (parseInt(note.id.slice(-2)) || 0) * 10,
+        y: 100 + (parseInt(note.id.slice(-2)) || 0) * 10,
+        width: 800,
+        height: 600,
+      }}
+      minWidth={400}
+      minHeight={300}
+      bounds="window"
+      onDragStart={onFocus}
+      onResizeStart={onFocus}
+      disableDragging={isMaximized}
+      enableResizing={!isMaximized}
+      size={isMaximized ? { width: '100vw', height: '100vh' } : undefined}
+      position={isMaximized ? { x: 0, y: 0 } : undefined}
+      style={{ zIndex, display: 'flex', flexDirection: 'column' }}
+      className={`window-rnd ${isMaximized ? 'maximized' : ''}`}
+      dragHandleClassName="window-header"
+    >
+      <div className="window-frame glass-card" onClick={onFocus} style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+        <div className="window-header" style={{ padding: '0.5rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', cursor: isMaximized ? 'default' : 'move' }}>
+          <div className="window-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
+            <FileCode size={14} />
+            <span>{note.title || 'İsimsiz Not'}</span>
+          </div>
+          <div className="window-controls" style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className="win-btn" onClick={toggleMaximize} style={{ padding: '0.2rem' }}>
+              {isMaximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+            <button className="win-btn win-close" onClick={() => onClose(note.id)} style={{ padding: '0.2rem' }}>
+              <X size={14} />
+            </button>
+          </div>
+        </div>
+        <div className="window-body" style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+          <NoteCard
+            note={note}
+            updateNote={updateNote}
+            deleteNote={deleteNote}
+            currentUser={currentUser}
+            workspace={workspace}
+          />
+        </div>
+      </div>
+    </Rnd>
+  );
+}
+
 function MainApp({ currentUser, onLogout }) {
   const [folders, setFolders] = useState([]);
   const [notes, setNotes] = useState([]);
@@ -850,6 +908,8 @@ function MainApp({ currentUser, onLogout }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem('codepad-theme') || '');
+  const [openWindows, setOpenWindows] = useState([]); // List of note IDs
+  const [activeWindowId, setActiveWindowId] = useState(null);
 
   useEffect(() => {
     // Remove all possible theme classes
@@ -1426,6 +1486,7 @@ function MainApp({ currentUser, onLogout }) {
                     folderNotes.map(n => {
                       const isNoteDragOver = dragOverItem?.id === n.id && dragOverItem?.type === 'note';
                       const isNoteDragging = draggedItem?.id === n.id && draggedItem?.type === 'note';
+                      const isWindowOpen = openWindows.includes(n.id);
 
                       let dragNoteClass = '';
                       if (isNoteDragOver) {
@@ -1436,7 +1497,10 @@ function MainApp({ currentUser, onLogout }) {
                         <div
                           key={n.id}
                           className={`tree-note-item ${n.id === selectedNoteId ? 'active' : ''} ${isNoteDragging ? 'dragging' : ''} ${dragNoteClass}`}
-                          onClick={() => setSelectedNoteId(n.id)}
+                          onClick={() => {
+                            setSelectedNoteId(n.id);
+                            setIsPartyRoomActive(false);
+                          }}
                           draggable={!n.isShared}
                           onDragStart={(e) => handleNoteDragStart(e, n.id)}
                           onDragOver={(e) => handleNoteDragOver(e, n.id)}
@@ -1444,8 +1508,27 @@ function MainApp({ currentUser, onLogout }) {
                           onDragLeave={handleDragLeave}
                           onDragEnd={handleDragEnd}
                         >
-                          <FileType2 size={14} />
-                          {n.title || 'İsimsiz Not'}
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+                            <FileType2 size={14} />
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.title || 'İsimsiz Not'}</span>
+                          </div>
+                          {!n.isShared && (
+                            <button
+                              className={`note-win-btn ${isWindowOpen ? 'active' : ''}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isWindowOpen) {
+                                  setActiveWindowId(n.id);
+                                } else {
+                                  setOpenWindows([...openWindows, n.id]);
+                                  setActiveWindowId(n.id);
+                                }
+                              }}
+                              title="Pencerede Aç"
+                            >
+                              <ExternalLink size={12} />
+                            </button>
+                          )}
                         </div>
                       )
                     })
@@ -1525,6 +1608,26 @@ function MainApp({ currentUser, onLogout }) {
         teams={userTeams}
         onSelect={handleSpotlightSelect}
       />
+
+      <div className="windows-container">
+        {openWindows.map((winId, index) => {
+          const winNote = notes.find(n => n.id === winId);
+          if (!winNote) return null;
+          return (
+            <Window
+              key={winId}
+              note={winNote}
+              onClose={(id) => setOpenWindows(openWindows.filter(w => w !== id))}
+              onFocus={() => setActiveWindowId(winId)}
+              zIndex={activeWindowId === winId ? 1000 : 100 + index}
+              updateNote={updateNote}
+              deleteNote={deleteNote}
+              currentUser={currentUser}
+              workspace={workspace}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 }

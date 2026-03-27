@@ -1342,3 +1342,73 @@ pre[class*="language-"] {
     opacity: 1;
   }
 }
+
+/* Multi-Window Styles */
+.windows-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.window-rnd {
+  pointer-events: auto;
+  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.window-rnd.maximized {
+  transform: none !important;
+  border-radius: 0;
+}
+
+.window-frame {
+  height: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.note-win-btn {
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  opacity: 0;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tree-note-item:hover .note-win-btn {
+  opacity: 1;
+}
+
+.note-win-btn:hover {
+  color: var(--accent-color);
+  background: rgba(88, 166, 255, 0.15);
+  transform: scale(1.1);
+}
+
+.note-win-btn.active {
+  opacity: 1;
+  color: var(--accent-color);
+  background: rgba(88, 166, 255, 0.2);
+}
+
+.win-btn {
+  color: var(--text-muted);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.win-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.win-close:hover {
+  background: var(--danger-color) !important;
+  color: #fff !important;
+}
