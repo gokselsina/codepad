@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Play, Repeat, Settings, Copy, Check, Terminal, Info, AlertCircle, Save, Database, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, Repeat, Settings, Copy, Check, Terminal, Info, Database, Layout } from 'lucide-react';
 
 const KkSchedulerJobEditorPlugin = {
     id: 'kk-scheduler-job-editor',
@@ -15,8 +15,6 @@ const KkSchedulerJobEditorPlugin = {
             isRepeat: true,
             repeatInterval: '1',
             repeatUnit: 'DAY', // MINUTE, HOUR, DAY, WEEK, MONTH
-            endDate: '',
-            arguments: '',
             description: 'Daily report generation job'
         });
 
@@ -57,9 +55,7 @@ const KkSchedulerJobEditorPlugin = {
             setSqlResult(sql);
         };
 
-        useEffect(() => {
-            generateOracleSql();
-        }, [jobData]);
+        useEffect(() => { generateOracleSql(); }, [jobData]);
 
         const handleCopy = () => {
             navigator.clipboard.writeText(sqlResult).then(() => {
@@ -70,133 +66,150 @@ const KkSchedulerJobEditorPlugin = {
 
         const inputStyle = {
             width: '100%',
-            padding: '0.7rem',
-            background: 'rgba(0,0,0,0.2)',
-            border: '1px solid var(--card-border)',
+            padding: '0.65rem 0.8rem',
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(245, 158, 11, 0.2)',
             borderRadius: '8px',
             color: '#fff',
-            fontSize: '0.85rem'
+            fontSize: '0.85rem',
+            outline: 'none',
+            transition: 'all 0.2s'
         };
 
         const labelStyle = {
             display: 'block',
-            fontSize: '0.75rem',
-            color: 'var(--text-muted)',
+            fontSize: '0.7rem',
+            color: 'rgba(245, 158, 11, 0.8)',
             marginBottom: '0.4rem',
-            fontWeight: '600',
-            textTransform: 'uppercase'
+            fontWeight: '700',
+            textTransform: 'uppercase',
+            letterSpacing: '0.02em'
         };
 
         return (
-            <div className="plugin-container animate-fade-in" style={{ padding: '1.5rem', width: '100%', maxWidth: '1400px', margin: '0 auto', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div className="plugin-container animate-fade-in" style={{ padding: '1.5rem', width: '100%', height: 'calc(100vh - 110px)', display: 'flex', flexDirection: 'column', gap: '1.2rem', overflow: 'hidden' }}>
 
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* Header - Info & Title */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(245, 158, 11, 0.05)', padding: '1rem 1.5rem', borderRadius: '16px', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.2)' }}>
                         <Calendar size={22} color="#fff" />
                     </div>
                     <div>
-                        <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0 }}>KK Scheduler Job Editor</h2>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Oracle DBMS_SCHEDULER tabanlı otomatik görev tanımlayıcı.</p>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#fff', margin: 0, textTransform: 'uppercase', letterSpacing: '0.02em' }}>KK Scheduler Job Creator</h2>
+                        <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', margin: '0.1rem 0 0 0' }}>DBMS_SCHEDULER işlerini görsel olarak yapılandırın.</p>
                     </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 450px) 1fr', gap: '1.5rem', flex: 1, overflow: 'hidden' }}>
+                {/* Main Grid Layout */}
+                <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '1.2rem', flex: 1, overflow: 'hidden' }}>
 
-                    {/* Settings Panel */}
-                    <div className="glass-card" style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+                    {/* Left Sidebar: Form Controls */}
+                    <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem', border: '1px solid rgba(245, 158, 11, 0.1)', overflowY: 'auto' }}>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid var(--card-border)', paddingBottom: '0.8rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             <Settings size={16} color="#f59e0b" />
-                            <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>JOB AYARLARI</span>
+                            <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fcd34d' }}>KONFİGÜRASYON</span>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div style={{ gridColumn: 'span 2' }}>
-                                <label style={labelStyle}>Job Adı</label>
-                                <input style={inputStyle} value={jobData.jobName} onChange={e => setJobData({ ...jobData, jobName: e.target.value })} placeholder="Örn: NIGHTLY_SYNC_JOB" />
-                            </div>
-
-                            <div style={{ gridColumn: 'span 2' }}>
-                                <label style={labelStyle}>Stored Procedure / Action</label>
-                                <input style={inputStyle} value={jobData.storedProc} onChange={e => setJobData({ ...jobData, storedProc: e.target.value })} placeholder="Örn: PR_SYNC_DATA" />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={labelStyle}>Job Name</label>
+                                <input style={inputStyle} value={jobData.jobName} onChange={e => setJobData({ ...jobData, jobName: e.target.value })} placeholder="JOB_NAME" />
                             </div>
 
                             <div>
-                                <label style={labelStyle}>Başlangıç Tarihi</label>
-                                <input type="date" style={inputStyle} value={jobData.startDate} onChange={e => setJobData({ ...jobData, startDate: e.target.value })} />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Başlangıç Saati</label>
-                                <input type="time" style={inputStyle} value={jobData.startTime} onChange={e => setJobData({ ...jobData, startTime: e.target.value })} />
+                                <label style={labelStyle}>Procedure / Action</label>
+                                <input style={inputStyle} value={jobData.storedProc} onChange={e => setJobData({ ...jobData, storedProc: e.target.value })} placeholder="PR_NAME" />
                             </div>
 
-                            <div style={{ gridColumn: 'span 2', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                    <label style={labelStyle}>Start Date</label>
+                                    <input type="date" style={inputStyle} value={jobData.startDate} onChange={e => setJobData({ ...jobData, startDate: e.target.value })} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Start Time</label>
+                                    <input type="time" style={inputStyle} value={jobData.startTime} onChange={e => setJobData({ ...jobData, startTime: e.target.value })} />
+                                </div>
+                            </div>
+
+                            <div style={{ padding: '1.2rem', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.03)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Repeat size={14} color="#f59e0b" />
-                                        <span style={{ fontSize: '0.85rem', fontWeight: '600' }}>Tekrar Etme</span>
+                                        <Repeat size={15} color="#fcd34d" />
+                                        <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#fff' }}>Tekrarlama (Repeat)</span>
                                     </div>
-                                    <label className="switch" style={{ width: '40px', height: '20px' }}>
-                                        <input type="checkbox" checked={jobData.isRepeat} onChange={e => setJobData({ ...jobData, isRepeat: e.target.checked })} style={{ opacity: 0, width: 0, height: 0 }} />
-                                        <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: jobData.isRepeat ? '#f59e0b' : '#333', transition: '.4s', borderRadius: '34px' }}>
-                                            <span style={{ position: 'absolute', height: '16px', width: '16px', left: jobData.isRepeat ? '22px' : '2px', bottom: '2px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%' }}></span>
-                                        </span>
-                                    </label>
+                                    {/* Clean UI Button Style Toggle instead of absolute floating elements */}
+                                    <button
+                                        onClick={() => setJobData({ ...jobData, isRepeat: !jobData.isRepeat })}
+                                        style={{
+                                            padding: '0.3rem 0.8rem',
+                                            borderRadius: '6px',
+                                            fontSize: '0.7rem',
+                                            fontWeight: '800',
+                                            cursor: 'pointer',
+                                            border: '1px solid',
+                                            background: jobData.isRepeat ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.05)',
+                                            borderColor: jobData.isRepeat ? '#f59e0b' : 'rgba(255,255,255,0.1)',
+                                            color: jobData.isRepeat ? '#fcd34d' : '#999'
+                                        }}
+                                    >
+                                        {jobData.isRepeat ? 'AKTİF' : 'PASİF'}
+                                    </button>
                                 </div>
 
                                 {jobData.isRepeat && (
                                     <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-end' }}>
                                         <div style={{ flex: 1 }}>
-                                            <label style={{ ...labelStyle, fontSize: '0.65rem' }}>Her</label>
-                                            <input type="number" style={inputStyle} value={jobData.repeatInterval} shadow="none" onChange={e => setJobData({ ...jobData, repeatInterval: e.target.value })} />
+                                            <label style={{ ...labelStyle, fontSize: '0.6rem' }}>Aralık</label>
+                                            <input type="number" style={inputStyle} value={jobData.repeatInterval} onChange={e => setJobData({ ...jobData, repeatInterval: e.target.value })} />
                                         </div>
                                         <div style={{ flex: 2 }}>
                                             <select style={inputStyle} value={jobData.repeatUnit} onChange={e => setJobData({ ...jobData, repeatUnit: e.target.value })}>
-                                                <option value="MINUTE">Dakikada Bir</option>
-                                                <option value="HOUR">Saatte Bir</option>
-                                                <option value="DAY">Günde Bir</option>
-                                                <option value="WEEK">Haftada Bir</option>
-                                                <option value="MONTH">Ayda Bir</option>
+                                                <option value="MINUTE">Dakika</option>
+                                                <option value="HOUR">Saat</option>
+                                                <option value="DAY">Gün</option>
+                                                <option value="WEEK">Hafta</option>
+                                                <option value="MONTH">Ay</option>
                                             </select>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            <div style={{ gridColumn: 'span 2' }}>
-                                <label style={labelStyle}>Açıklama (Comment)</label>
-                                <textarea style={{ ...inputStyle, height: '60px', resize: 'none' }} value={jobData.description} onChange={e => setJobData({ ...jobData, description: e.target.value })} />
+                            <div>
+                                <label style={labelStyle}>Description (Comment)</label>
+                                <textarea style={{ ...inputStyle, minHeight: '80px', resize: 'none' }} value={jobData.description} onChange={e => setJobData({ ...jobData, description: e.target.value })} />
                             </div>
                         </div>
                     </div>
 
-                    {/* SQL Preview Panel */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', overflow: 'hidden' }}>
-                        <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                            <div style={{ padding: '1rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(245, 158, 11, 0.05)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Terminal size={16} color="#f59e0b" />
-                                    <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>ÜRETİLEN ORACLE SQL</span>
+                    {/* Right Panel: SQL Result & Preview */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', overflow: 'hidden' }}>
+
+                        <div className="glass-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'rgba(0,0,0,0.4)', borderRadius: '20px' }}>
+                            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(245, 158, 11, 0.05)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                    <Terminal size={18} color="#f59e0b" />
+                                    <span style={{ fontWeight: '800', fontSize: '0.85rem', color: '#fff', letterSpacing: '0.05em' }}>PREVIEW: DB_QUERY</span>
                                 </div>
-                                <button className="btn" onClick={handleCopy} style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.5rem', background: copied ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.05)', color: copied ? '#4ade80' : '#fff' }}>
-                                    {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Kopyalandı' : 'Kopyala'}
+                                <button className="btn" onClick={handleCopy} style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', gap: '0.5rem', background: copied ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245,158,11,0.1)', color: copied ? '#4ade80' : '#fcd34d', border: '1px solid', borderColor: copied ? '#4ade80' : 'rgba(245,158,11,0.3)' }}>
+                                    {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'BAŞARIYLA KOPYALANDI' : 'TÜMÜNÜ KOPYALA'}
                                 </button>
                             </div>
-                            <div style={{ flex: 1, padding: '1.5rem', background: 'rgba(0,0,0,0.3)', overflow: 'auto' }}>
-                                <pre style={{ margin: 0, fontFamily: '"Fira Code", monospace', color: '#fcd34d', fontSize: '13px', lineHeight: '1.6' }}>
+
+                            <div style={{ flex: 1, padding: '1.5rem', overflow: 'auto' }}>
+                                <pre style={{ margin: 0, fontFamily: '"Fira Code", monospace', color: '#fcd34d', fontSize: '13px', lineHeight: '1.8' }}>
                                     {sqlResult}
                                 </pre>
                             </div>
                         </div>
 
-                        {/* Quick Action Hints */}
-                        <div className="glass-card" style={{ padding: '1rem', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                <Info size={16} color="#f59e0b" />
-                                <span style={{ fontSize: '0.8rem', color: '#f59e0b', fontWeight: '500' }}>
-                                    DBMS_SCHEDULER ayarlarını sol panelden değiştirdiğinizde SQL otomatik güncellenir.
-                                </span>
+                        {/* Bottom Tip Panel */}
+                        <div className="glass-card" style={{ padding: '1.2rem', background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <Info size={18} color="#f59e0b" />
+                            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                                <strong>Önemli Not:</strong> DBMS_SCHEDULER işleri varsayılan olarak <span style={{ color: '#fcd34d' }}>enabled => TRUE</span> olarak oluşturulur.
                             </div>
                         </div>
                     </div>
