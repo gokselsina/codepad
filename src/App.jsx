@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink, ChevronDown, ChevronUp, Puzzle } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink, ChevronDown, ChevronUp, Puzzle, Download, FileText, FileCode2 } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import Editor, { loader } from '@monaco-editor/react';
 import js_beautify from 'js-beautify';
@@ -269,6 +269,114 @@ function ShareModal({ isOpen, onClose, note, updateNote, currentUser }) {
   );
 }
 
+// ─── Export Helper ──────────────────────────────────────────────────────────
+function escapeHtml(str) {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function generateNoteExportHTML(note) {
+  const title = note.title || 'İsimsiz Not';
+  const now = new Date().toLocaleString('tr-TR');
+
+  const blocksHtml = (note.blocks || []).map(block => {
+    if (block.type === 'text') {
+      const lines = (block.content || '').split('\n').map(l => `<p>${escapeHtml(l) || '&nbsp;'}</p>`).join('');
+      return `<div class="text-block">${lines}</div>`;
+    } else if (block.type === 'code') {
+      const lang = block.language || 'javascript';
+      const prismLang = {
+        javascript: 'javascript', python: 'python', html: 'markup',
+        css: 'css', sql: 'sql', plsql: 'sql', json: 'json', markdown: 'markdown'
+      }[lang] || 'javascript';
+      const code = escapeHtml(block.content || '');
+      return `
+        <div class="code-block">
+          <div class="code-header">
+            <span class="lang-badge">${escapeHtml(lang.toUpperCase())}</span>
+            <span class="code-lines">${(block.content || '').split('\n').length} satır</span>
+          </div>
+          <pre class="language-${prismLang}"><code class="language-${prismLang}">${code}</code></pre>
+        </div>`;
+    }
+    return '';
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)} — Codepad</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --border: rgba(255,255,255,0.08);
+      --text: #e6edf3; --muted: #8b949e; --accent: #60a5fa;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif;
+      line-height: 1.7; padding: 2rem 1rem; }
+    .page-wrap { max-width: 860px; margin: 0 auto; }
+    .doc-header { border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 2rem; }
+    .doc-title { font-size: 2rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+    .doc-meta { margin-top: 0.5rem; font-size: 0.82rem; color: var(--muted);
+      display: flex; align-items: center; gap: 1rem; }
+    .meta-pill { background: rgba(96,165,250,0.1); color: var(--accent);
+      padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; }
+    .text-block { margin-bottom: 1.2rem; }
+    .text-block p { color: var(--text); font-size: 0.97rem; margin-bottom: 0.3rem; }
+    .code-block { margin-bottom: 1.5rem; border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border); }
+    .code-header { display: flex; justify-content: space-between; align-items: center;
+      padding: 0.5rem 1rem; background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid var(--border); }
+    .lang-badge { font-size: 0.72rem; font-weight: 600; color: var(--accent);
+      background: rgba(96,165,250,0.12); padding: 0.15rem 0.5rem; border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+    .code-lines { font-size: 0.72rem; color: var(--muted); }
+    pre[class*="language-"] { margin: 0 !important; border-radius: 0 !important;
+      background: #0d1117 !important; padding: 1.2rem 1.4rem !important;
+      font-family: 'JetBrains Mono', monospace !important; font-size: 0.85rem !important;
+      overflow-x: auto; }
+    .doc-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+      text-align: center; font-size: 0.78rem; color: var(--muted); }
+    @media print {
+      body { background: #fff; color: #111; }
+      :root { --bg: #fff; --surface: #f5f5f5; --text: #111; --muted: #555; }
+      .code-block { border: 1px solid #ddd; }
+      pre[class*="language-"] { background: #f5f5f5 !important; color: #333 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="doc-header">
+      <div class="doc-title">${escapeHtml(title)}</div>
+      <div class="doc-meta">
+        <span>📅 ${now}</span>
+        <span class="meta-pill">Codepad</span>
+        <span>${(note.blocks || []).length} blok</span>
+      </div>
+    </div>
+    ${blocksHtml}
+    <div class="doc-footer">Bu belge Codepad ile oluşturulmuştur.</div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+</body>
+</html>`;
+}
+
 function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForcedParty }) {
   const blocks = note.blocks || [];
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -395,6 +503,47 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
   };
 
   const [copiedBlockId, setCopiedBlockId] = useState(null);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!isExportMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isExportMenuOpen]);
+
+  const handleExportHTML = () => {
+    const html = generateNoteExportHTML(note);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(note.title || 'not').replace(/[^a-zA-Z0-9çğışöüÇĞİŞÖÜ\s-]/g, '').trim() || 'not'}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportPDF = () => {
+    const html = generateNoteExportHTML(note);
+    const printWin = window.open('', '_blank', 'width=900,height=700');
+    if (!printWin) { alert('Pop-up engelleyicinizi devre dışı bırakın.'); return; }
+    printWin.document.write(html);
+    printWin.document.close();
+    // Wait for scripts/fonts to load before printing
+    printWin.addEventListener('load', () => {
+      setTimeout(() => {
+        printWin.focus();
+        printWin.print();
+      }, 800);
+    });
+    setIsExportMenuOpen(false);
+  };
 
   const handleCopy = async (blockId, content) => {
     try {
@@ -509,6 +658,66 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
               <Share2 size={20} />
             </button>
           )}
+
+          {/* Export Menu */}
+          <div ref={exportMenuRef} style={{ position: 'relative', marginRight: '0.5rem' }}>
+            <button
+              className="btn-icon"
+              onClick={() => setIsExportMenuOpen(prev => !prev)}
+              title="Dışa Aktar"
+              style={isExportMenuOpen ? { background: 'rgba(96,165,250,0.15)', color: 'var(--accent-color)' } : {}}
+            >
+              <Download size={20} />
+            </button>
+            {isExportMenuOpen && (
+              <div style={{
+                position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                background: 'var(--card-bg)', border: '1px solid var(--card-border)',
+                borderRadius: '10px', minWidth: '190px', zIndex: 100,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5)', overflow: 'hidden',
+                animation: 'fadeIn 0.15s ease'
+              }}>
+                <div style={{ padding: '0.4rem 0.8rem', fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--card-border)' }}>
+                  Dışa Aktar
+                </div>
+                <button
+                  onClick={handleExportHTML}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.7rem',
+                    width: '100%', padding: '0.75rem 1rem', background: 'transparent',
+                    border: 'none', color: 'var(--text-color)', cursor: 'pointer',
+                    fontSize: '0.875rem', textAlign: 'left', transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <FileCode2 size={16} color="var(--accent-color)" />
+                  <div>
+                    <div style={{ fontWeight: 500 }}>HTML olarak İndir</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Tarayıcıda açılabilir</div>
+                  </div>
+                </button>
+                <div style={{ height: '1px', background: 'var(--card-border)', margin: '0 0.5rem' }} />
+                <button
+                  onClick={handleExportPDF}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.7rem',
+                    width: '100%', padding: '0.75rem 1rem', background: 'transparent',
+                    border: 'none', color: 'var(--text-color)', cursor: 'pointer',
+                    fontSize: '0.875rem', textAlign: 'left', transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <FileText size={16} color="#34d399" />
+                  <div>
+                    <div style={{ fontWeight: 500 }}>PDF olarak Kaydet</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Yazdır → PDF seç</div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
 
           {isForcedParty && (
             <button
