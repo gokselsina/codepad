@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Globe, Database, Copy, Check, Terminal, RefreshCw, History, Clock, ArrowRight, Search, Activity, Trash2, Zap, Layout, Maximize2, ExternalLink } from 'lucide-react';
+import { Globe, Database, Copy, Check, Terminal, RefreshCw, History, Clock, ArrowRight, Activity, Trash2, Zap, Layout } from 'lucide-react';
 
 const GuiSqlInterceptorPlugin = {
     id: 'gui-sql-interceptor',
     name: 'KK GUI SQL Interceptor',
     icon: <Globe size={16} />,
     component: () => {
-        const [portalUrl, setPortalUrl] = useState('https://gui.kentkart.com.tr/portal');
         const [history, setHistory] = useState([]);
         const [lastResult, setLastResult] = useState(null);
         const [copied, setCopied] = useState(false);
@@ -111,35 +110,19 @@ const GuiSqlInterceptorPlugin = {
 
                 {/* Header - Control Center */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(139, 92, 246, 0.05)', padding: '1rem 1.5rem', borderRadius: '16px', border: '1px solid rgba(139, 92, 246, 0.1)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'linear-gradient(135deg, var(--accent-color), #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Globe size={24} color="#fff" />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0, whiteSpace: 'nowrap' }}>KK GUI SQL Interceptor</h2>
-                                <div style={{ flex: 1, maxWidth: '500px', position: 'relative' }}>
-                                    <input
-                                        type="text"
-                                        className="input-field"
-                                        style={{ width: '100%', paddingLeft: '2.5rem', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: '8px', color: '#60a5fa' }}
-                                        value={portalUrl}
-                                        onChange={(e) => setPortalUrl(e.target.value)}
-                                        placeholder="Açılacak Portal Linkini Yapıştırın..."
-                                    />
-                                    <Search size={14} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-                                </div>
+                        <div>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff', margin: 0 }}>KK GUI SQL Interceptor</h2>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
+                                <Activity size={12} color="#4ade80" />
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hazır JSON Ayrıştırma & Geçmiş Modu</span>
                             </div>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.8rem', marginLeft: '1rem' }}>
-                        <button
-                            className="btn btn-secondary"
-                            onClick={() => window.open(portalUrl, '_blank')}
-                            style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', gap: '0.5rem' }}
-                        >
-                            <ExternalLink size={14} /> Portalı Aç
-                        </button>
+                    <div style={{ display: 'flex', gap: '0.8rem' }}>
                         <button className="btn btn-primary" onClick={() => { if (manualInput) processSqlData(manualInput); }} style={{ padding: '0.5rem 1.2rem', fontSize: '0.8rem', gap: '0.5rem', opacity: manualInput ? 1 : 0.5 }}>
                             <Zap size={14} /> Şimdi Çevir
                         </button>
@@ -152,13 +135,12 @@ const GuiSqlInterceptorPlugin = {
                     {/* Left Panel: Input & Output */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', overflow: 'hidden' }}>
 
-                        {/* Upper: High-Visibility Input Area */}
+                        {/* Upper: Input Area */}
                         <div className="glass-card" style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem', borderStyle: 'dashed', borderColor: 'var(--accent-color)', background: 'rgba(139, 92, 246, 0.02)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-color)', fontSize: '0.85rem', fontWeight: '600' }}>
-                                    <Terminal size={16} /> PORTAL DEBUG ÇIKTISI (JSON)
+                                    <Terminal size={16} /> PORTAL ÇIKTISI (JSON)
                                 </div>
-                                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Portal'da linke debug=1 ekleyin ve gelen içeriği buraya yapıştırın.</span>
                             </div>
                             <textarea
                                 className="input-field"
@@ -167,12 +149,11 @@ const GuiSqlInterceptorPlugin = {
                                     height: '140px',
                                     fontFamily: '"Fira Code", monospace',
                                     fontSize: '12px',
-                                    background: 'rgba(0,0,0,0.3)',
                                     padding: '1rem',
                                     resize: 'none',
                                     borderRadius: '12px'
                                 }}
-                                placeholder='Örn: {"sqlString": "SELECT...", "sqlParams": {...}}'
+                                placeholder='JSON içeriğini yapıştırın...'
                                 value={manualInput}
                                 onChange={(e) => setManualInput(e.target.value)}
                                 onKeyDown={(e) => {
@@ -191,93 +172,72 @@ const GuiSqlInterceptorPlugin = {
                                     <span>SONUÇ SORGU</span>
                                 </div>
                                 {lastResult && (
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <button className="btn" onClick={() => handleCopy(lastResult.sql)} style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', background: copied ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)', color: copied ? '#4ade80' : '#fff' }}>
-                                            {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Kopyalandı!' : 'Kopyala'}
-                                        </button>
-                                    </div>
+                                    <button className="btn" onClick={() => handleCopy(lastResult.sql)} style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', gap: '0.4rem', background: copied ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255,255,255,0.05)', color: copied ? '#4ade80' : '#fff' }}>
+                                        {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Kopyalandı!' : 'Kopyala'}
+                                    </button>
                                 )}
                             </div>
 
-                            <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', borderRadius: '12px', border: '1px solid var(--card-border)', overflow: 'auto', position: 'relative', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.3)' }}>
+                            <div style={{ flex: 1, background: 'rgba(0,0,0,0.4)', borderRadius: '12px', border: '1px solid var(--card-border)', overflow: 'auto', position: 'relative' }}>
                                 {!lastResult ? (
                                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', textAlign: 'center', opacity: 0.5 }}>
                                         <Layout size={48} style={{ marginBottom: '1rem' }} />
-                                        <p style={{ fontSize: '0.9rem' }}>Henüz bir sorgu yakalanmadı.<br />Üstteki alana JSON yapıştırın veya geçmişten bir kayıt seçin.</p>
+                                        <p style={{ fontSize: '0.9rem' }}>Henüz bir sorgu yakalanmadı.</p>
                                     </div>
                                 ) : (
-                                    <pre style={{ margin: 0, padding: '1.5rem', fontFamily: '"Fira Code", monospace', fontSize: '13px', lineHeight: '1.7', color: '#93c5fd', whiteSpace: 'pre', tabSize: 2 }}>
+                                    <pre style={{ margin: 0, padding: '1.5rem', fontFamily: '"Fira Code", monospace', fontSize: '13px', lineHeight: '1.7', color: '#93c5fd', whiteSpace: 'pre' }}>
                                         {lastResult.sql}
                                     </pre>
                                 )}
                             </div>
-
-                            {lastResult && (
-                                <div style={{ display: 'flex', gap: '1rem', padding: '0.5rem 0' }}>
-                                    <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.7rem', color: 'rgba(167, 139, 250, 0.9)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-                                        Parametre: <b>{lastResult.stats.paramCount}</b>
-                                    </div>
-                                    <div style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '0.4rem 0.8rem', borderRadius: '6px', fontSize: '0.7rem', color: 'rgba(74, 222, 128, 0.9)', border: '1px solid rgba(74, 222, 128, 0.2)' }}>
-                                        Yerleşim: <b>{lastResult.stats.replacedCount}</b>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
 
                     {/* Right Sidebar: Activity History */}
                     <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
-                        <div style={{ padding: '1.2rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+                        <div style={{ padding: '1.2rem', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', fontWeight: '700' }}>
                                 <History size={18} /> GEÇMİŞ
                             </div>
-                            <button className="btn-icon" onClick={() => { setHistory([]); setLastResult(null); }} title="Geçmişi Temizle" style={{ color: 'var(--danger-color)' }}>
+                            <button className="btn-icon" onClick={() => setHistory([])} style={{ color: 'var(--danger-color)' }}>
                                 <Trash2 size={16} />
                             </button>
                         </div>
 
                         <div style={{ flex: 1, overflowY: 'auto', padding: '0.8rem' }}>
-                            {history.length === 0 ? (
-                                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.2, textAlign: 'center' }}>
-                                    <Clock size={40} style={{ marginBottom: '1rem' }} />
-                                    <p style={{ fontSize: '0.8rem' }}>Henüz yakalanan<br />sorgu yok.</p>
-                                </div>
-                            ) : (
-                                history.map((item, idx) => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => { setLastResult(item); setCopied(false); }}
-                                        style={{
-                                            padding: '1rem',
-                                            borderRadius: '12px',
-                                            background: item.id === lastResult?.id ? 'rgba(139, 92, 246, 0.12)' : 'rgba(255,255,255,0.03)',
-                                            cursor: 'pointer',
-                                            marginBottom: '0.8rem',
-                                            border: item.id === lastResult?.id ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
-                                            transition: 'all 0.2s',
-                                            transform: item.id === lastResult?.id ? 'scale(1.02)' : 'scale(1)'
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Clock size={10} /> {getTimeAgo(item.stats.timestamp)}</span>
-                                            <span style={{ color: 'var(--accent-color)', fontWeight: '600' }}>{item.stats.replacedCount} YAKALAMA</span>
-                                        </div>
-                                        <div style={{
-                                            fontSize: '0.75rem',
-                                            color: '#eee',
-                                            fontFamily: 'monospace',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 3,
-                                            WebkitBoxOrient: 'vertical',
-                                            lineHeight: '1.5'
-                                        }}>
-                                            {item.sql}
+                            {history.map((item, idx) => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => { setLastResult(item); setCopied(false); }}
+                                    style={{
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        background: item.id === lastResult?.id ? 'rgba(139, 92, 246, 0.12)' : 'rgba(255,255,255,0.03)',
+                                        cursor: 'pointer',
+                                        marginBottom: '0.8rem',
+                                        border: item.id === lastResult?.id ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid transparent',
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Clock size={10} /> {getTimeAgo(item.stats.timestamp)}</span>
+                                        <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                            <button
+                                                className="btn-icon"
+                                                onClick={(e) => { e.stopPropagation(); handleCopy(item.sql); }}
+                                                style={{ padding: '2px', opacity: 0.6 }}
+                                                title="Hızlı Kopyala"
+                                            >
+                                                <Copy size={12} />
+                                            </button>
+                                            <span style={{ color: 'var(--accent-color)', fontWeight: '600' }}>{item.stats.replacedCount} P.</span>
                                         </div>
                                     </div>
-                                ))
-                            )}
+                                    <div style={{ fontSize: '0.75rem', color: '#eee', fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', lineHeight: '1.5' }}>
+                                        {item.sql}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
