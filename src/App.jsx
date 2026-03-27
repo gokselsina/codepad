@@ -1591,14 +1591,14 @@ function MainApp({ currentUser, onLogout }) {
           <Plus size={18} /> Yeni Kategori Ekle
         </button>
 
-        {plugins.length > 0 && (
+        {plugins.length > 0 && userInstalledPlugins.length > 0 && (
           <div className="plugins-section" style={{ marginTop: '1.5rem' }}>
             <div className="folder-header" style={{ color: 'var(--accent-color)', opacity: 0.8, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '0 0.5rem 0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Eklentiler</span>
               <button
                 className="btn-icon"
-                onClick={() => setIsStoreOpen(true)}
-                title="Eklenti Mağazası"
+                onClick={() => setIsSettingsOpen(true)}
+                title="Eklenti Mağazası (Ayarlar)"
                 style={{ padding: '2px', background: 'rgba(139, 92, 246, 0.15)', borderRadius: '4px' }}
               >
                 <Plus size={12} color="var(--accent-color)" />
@@ -1621,14 +1621,6 @@ function MainApp({ currentUser, onLogout }) {
                 </div>
               </div>
             ))}
-            {userInstalledPlugins.length === 0 && (
-              <div
-                onClick={() => setIsStoreOpen(true)}
-                style={{ padding: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', cursor: 'pointer', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '6px', margin: '0 0.5rem' }}
-              >
-                Eklenti yüklemek için tıklayın
-              </div>
-            )}
           </div>
         )}
 
