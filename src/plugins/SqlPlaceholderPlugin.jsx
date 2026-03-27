@@ -3,7 +3,7 @@ import { Database, Copy, Check, Terminal, RefreshCw, FileText, AlignLeft } from 
 
 const SqlPlaceholderPlugin = {
     id: 'sql-placeholder-fixer',
-    name: 'SQL Parametre Birleştirici',
+    name: 'KK V1 Rapor Sorgu Çevirici',
     icon: <Database size={16} />,
     component: () => {
         const [input, setInput] = useState('');
@@ -91,7 +91,7 @@ const SqlPlaceholderPlugin = {
                                 <Database className="text-purple-400" size={22} />
                             </div>
                             <div>
-                                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff', margin: 0 }}>SQL Parametre Birleştirici</h2>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff', margin: 0 }}>KK V1 Rapor Sorgu Çevirici</h2>
                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>JSON verisini SQL sorgusu ile otomatik olarak harmanlar ve düzenler.</p>
                             </div>
                         </div>
@@ -153,9 +153,33 @@ const SqlPlaceholderPlugin = {
                                     <button
                                         className="btn"
                                         onClick={() => {
-                                            navigator.clipboard.writeText(result);
-                                            setCopied(true);
-                                            setTimeout(() => setCopied(false), 2000);
+                                            const copyToClipboard = (text) => {
+                                                if (navigator.clipboard && window.isSecureContext) {
+                                                    return navigator.clipboard.writeText(text);
+                                                } else {
+                                                    // Fallback for non-secure contexts or older browsers
+                                                    let textArea = document.createElement("textarea");
+                                                    textArea.value = text;
+                                                    textArea.style.position = "fixed";
+                                                    textArea.style.left = "-999999px";
+                                                    textArea.style.top = "-999999px";
+                                                    document.body.appendChild(textArea);
+                                                    textArea.focus();
+                                                    textArea.select();
+                                                    return new Promise((res, rej) => {
+                                                        document.execCommand('copy') ? res() : rej();
+                                                        textArea.remove();
+                                                    });
+                                                }
+                                            };
+
+                                            copyToClipboard(result).then(() => {
+                                                setCopied(true);
+                                                setTimeout(() => setCopied(false), 2000);
+                                            }).catch(err => {
+                                                console.error('Kopyalama hatası:', err);
+                                                alert('Kopyalama başarısız oldu.');
+                                            });
                                         }}
                                         style={{
                                             padding: '0.4rem 0.8rem',

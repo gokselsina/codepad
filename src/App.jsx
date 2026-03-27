@@ -873,7 +873,7 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange, plugins, 
     { id: 'everforest', name: 'Everforest Dark', class: 'theme-everforest-dark', colors: ['#2d353b', '#2b3339', '#a7c080'], stats: '7695' },
   ];
 
-  const [activeTab, setActiveTab] = useState('palette');
+  const [activeTab, setActiveTab] = useState('apps');
 
   return (
     <>
@@ -884,10 +884,10 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange, plugins, 
           <button className="btn-icon" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="settings-tabs">
-          <div className={`settings-tab-btn ${activeTab === 'rocket' ? 'active' : ''}`} onClick={() => setActiveTab('rocket')}><Sparkles size={20} /></div>
-          <div className={`settings-tab-btn ${activeTab === 'code' ? 'active' : ''}`} onClick={() => setActiveTab('code')}><Code size={20} /></div>
-          <div className={`settings-tab-btn ${activeTab === 'palette' ? 'active' : ''}`} onClick={() => setActiveTab('palette')} title="Görünüm ve Temalar"><Palette size={20} /></div>
           <div className={`settings-tab-btn ${activeTab === 'apps' ? 'active' : ''}`} onClick={() => setActiveTab('apps')} title="Uygulama Mağazası"><Puzzle size={20} /></div>
+          <div className={`settings-tab-btn ${activeTab === 'rocket' ? 'active' : ''}`} onClick={() => setActiveTab('rocket')} title="Özellikler"><Sparkles size={20} /></div>
+          <div className={`settings-tab-btn ${activeTab === 'code' ? 'active' : ''}`} onClick={() => setActiveTab('code')} title="Kod Ayarları"><Code size={20} /></div>
+          <div className={`settings-tab-btn ${activeTab === 'palette' ? 'active' : ''}`} onClick={() => setActiveTab('palette')} title="Görünüm ve Temalar"><Palette size={20} /></div>
         </div>
         <div className="settings-content">
           {activeTab === 'palette' ? (
