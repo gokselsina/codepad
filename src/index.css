@@ -1442,6 +1442,11 @@ pre[class*="language-"] {
   background: rgba(0, 0, 0, 0.3);
   border-top: 1px solid var(--card-border);
   padding: 0.75rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.dynamic-params-panel.collapsed {
+  padding-bottom: 0.25rem;
 }
 
 .params-header {

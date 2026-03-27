@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
-import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
+import { Copy, Plus, Trash2, Check, FileCode, FileType2, Edit3, Type, Code, LogOut, User, Share2, Search, X, Menu, ChevronLeft, Users, UserPlus, Sparkles, Palette, Maximize2, Minimize2, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import Editor, { loader } from '@monaco-editor/react';
 import js_beautify from 'js-beautify';
@@ -472,6 +472,15 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     }));
   };
 
+  const [collapsedParams, setCollapsedParams] = useState({}); // { blockId: boolean }
+
+  const toggleParamsCollapsed = (blockId) => {
+    setCollapsedParams(prev => ({
+      ...prev,
+      [blockId]: !prev[blockId]
+    }));
+  };
+
 
   return (
     <>
@@ -699,28 +708,32 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                       />
                     </div>
                     {block.isDynamic && (
-                      <div className="dynamic-params-panel">
-                        <div className="params-header">
-                          <Sparkles size={12} /> <span>Dinamik Parametreler</span>
+                      <div className={`dynamic-params-panel ${collapsedParams[block.id] ? 'collapsed' : ''}`}>
+                        <div className="params-header" onClick={() => toggleParamsCollapsed(block.id)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                          <Sparkles size={12} />
+                          <span style={{ flex: 1 }}>Dinamik Parametreler</span>
+                          {collapsedParams[block.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                         </div>
-                        <div className="params-grid">
-                          {getParamsFromCode(block.content).map(param => (
-                            <div key={param} className="param-input-group">
-                              <label>${param}</label>
-                              <input
-                                type="text"
-                                placeholder={`${param} değerini gir...`}
-                                value={activeParams[block.id]?.[param] || ''}
-                                onChange={(e) => updateParamValue(block.id, param, e.target.value)}
-                              />
-                            </div>
-                          ))}
-                          {getParamsFromCode(block.content).length === 0 && (
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '0.5rem' }}>
-                              Kod içinde $ ile başlayan değişken bulunamadı (Örn: $kart_no)
-                            </div>
-                          )}
-                        </div>
+                        {!collapsedParams[block.id] && (
+                          <div className="params-grid animate-fade-in">
+                            {getParamsFromCode(block.content).map(param => (
+                              <div key={param} className="param-input-group">
+                                <label>${param}</label>
+                                <input
+                                  type="text"
+                                  placeholder={`${param} değerini gir...`}
+                                  value={activeParams[block.id]?.[param] || ''}
+                                  onChange={(e) => updateParamValue(block.id, param, e.target.value)}
+                                />
+                              </div>
+                            ))}
+                            {getParamsFromCode(block.content).length === 0 && (
+                              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '0.5rem' }}>
+                                Kod içinde $ ile başlayan değişken bulunamadı (Örn: $kart_no)
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
