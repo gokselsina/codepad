@@ -863,7 +863,7 @@ function Spotlight({ isOpen, onClose, folders, notes, teams, onSelect }) {
   );
 }
 
-function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange }) {
+function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange, plugins, userInstalledPlugins, togglePluginInstall }) {
   const themes = [
     { id: 'midnight', name: 'Midnight Premium', class: '', colors: ['#030712', '#112240', '#60a5fa'], stats: 'Varsayılan' },
     { id: 'termius-light', name: 'Termius Light', class: 'theme-termius-light', colors: ['#f3f4f6', '#ffffff', '#2563eb'], stats: '34561' },
@@ -886,8 +886,8 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange }) {
         <div className="settings-tabs">
           <div className={`settings-tab-btn ${activeTab === 'rocket' ? 'active' : ''}`} onClick={() => setActiveTab('rocket')}><Sparkles size={20} /></div>
           <div className={`settings-tab-btn ${activeTab === 'code' ? 'active' : ''}`} onClick={() => setActiveTab('code')}><Code size={20} /></div>
-          <div className={`settings-tab-btn ${activeTab === 'clock' ? 'active' : ''}`} onClick={() => setActiveTab('clock')}><Users size={20} /></div>
-          <div className={`settings-tab-btn ${activeTab === 'palette' ? 'active' : ''}`} onClick={() => setActiveTab('palette')}><Palette size={20} /></div>
+          <div className={`settings-tab-btn ${activeTab === 'palette' ? 'active' : ''}`} onClick={() => setActiveTab('palette')} title="Görünüm ve Temalar"><Palette size={20} /></div>
+          <div className={`settings-tab-btn ${activeTab === 'apps' ? 'active' : ''}`} onClick={() => setActiveTab('apps')} title="Uygulama Mağazası"><Puzzle size={20} /></div>
         </div>
         <div className="settings-content">
           {activeTab === 'palette' ? (
@@ -913,7 +913,36 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange }) {
                   </div>
                 ))}
               </div>
-
+            </div>
+          ) : activeTab === 'apps' ? (
+            <div className="settings-section">
+              <h4>Eklenti Mağazası</h4>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Sistem yeteneklerini artıran modüller ekleyin.</p>
+              <div className="theme-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                {plugins.map(plugin => {
+                  const isInstalled = userInstalledPlugins.includes(plugin.id);
+                  return (
+                    <div key={plugin.id} className="theme-item" style={{ cursor: 'default', padding: '1rem' }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(139, 92, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem' }}>
+                        {plugin.icon || <Puzzle size={20} color="var(--accent-color)" />}
+                      </div>
+                      <div className="theme-info" style={{ flex: 1 }}>
+                        <span className="theme-name" style={{ color: '#fff' }}>{plugin.name}</span>
+                        <span className="theme-stats" style={{ display: 'block', fontSize: '0.75rem', marginTop: '0.2rem' }}>
+                          {plugin.id === 'sql-placeholder-fixer' ? 'Karmaşık SQL çıktılarını analiz eder.' : 'Özel araçlar ve modüller.'}
+                        </span>
+                      </div>
+                      <button
+                        className={`btn ${isInstalled ? 'btn-danger' : 'btn-primary'}`}
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: isInstalled ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-color)', borderColor: isInstalled ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: isInstalled ? '#ef4444' : '#fff' }}
+                        onClick={() => togglePluginInstall(plugin.id)}
+                      >
+                        {isInstalled ? 'Kaldır' : 'Yükle'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -1482,52 +1511,7 @@ function MainApp({ currentUser, onLogout }) {
         </div>
       )}
 
-      {isStoreOpen && (
-        <div className="modal-overlay" onClick={() => setIsStoreOpen(false)}>
-          <div className="modal-content glass-card" onClick={e => e.stopPropagation()} style={{ maxWidth: '800px', width: '90%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                <Puzzle size={24} color="var(--accent-color)" />
-                <h3 style={{ margin: 0 }}>Eklenti Mağazası</h3>
-              </div>
-              <button className="btn-icon" onClick={() => setIsStoreOpen(false)}><X size={20} /></button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', padding: '0.5rem' }}>
-              {plugins.map(plugin => {
-                const isInstalled = userInstalledPlugins.includes(plugin.id);
-                return (
-                  <div key={plugin.id} className="glass-card" style={{ padding: '1.2rem', borderRadius: '12px', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: '1rem', transition: 'transform 0.2s', cursor: 'default' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                      <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'rgba(139, 92, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {plugin.icon || <Puzzle size={20} />}
-                      </div>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: '1rem' }}>{plugin.name}</h4>
-                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>v1.0.0</span>
-                      </div>
-                    </div>
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                      {plugin.id === 'sql-placeholder-fixer' ? 'Karmaşık SQL çıktılarını analiz eder ve parametreleri otomatik olarak birleştirir.' : 'Uygulama işlevselliğini artıran modüler bir eklenti.'}
-                    </p>
-                    <button
-                      className={`btn ${isInstalled ? 'btn-danger' : 'btn-primary'}`}
-                      style={{ width: '100%', marginTop: 'auto', padding: '0.5rem', background: isInstalled ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-color)', borderColor: isInstalled ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: isInstalled ? '#ef4444' : '#fff' }}
-                      onClick={() => togglePluginInstall(plugin.id)}
-                    >
-                      {isInstalled ? 'Kaldır' : 'Yükle'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="modal-actions" style={{ marginTop: '1.5rem', textAlign: 'right' }}>
-              <button className="btn btn-secondary" onClick={() => setIsStoreOpen(false)}>Kapat</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* All plugin store logic now in SettingsPanel */}
 
       <aside className={`sidebar animate-fade-in ${isSidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
@@ -1818,6 +1802,9 @@ function MainApp({ currentUser, onLogout }) {
         onClose={() => setIsSettingsOpen(false)}
         currentTheme={currentTheme}
         onThemeChange={setCurrentTheme}
+        plugins={plugins}
+        userInstalledPlugins={userInstalledPlugins}
+        togglePluginInstall={togglePluginInstall}
       />
       <Spotlight
         isOpen={isSpotlightOpen}
