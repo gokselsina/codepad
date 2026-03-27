@@ -17,5 +17,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd /codepad
+            cd ~/codepad
             npm run build
