@@ -647,7 +647,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                           <option value="markdown">Markdown</option>
                         </select>
                         {!isReadOnly && (
-                          <label className="dynamic-toggle" title="Kod içindeki $değişkenleri dinamik alanlara dönüştürür">
+                          <label className={`dynamic-toggle ${block.isDynamic ? 'active' : ''}`} title="Kod içindeki $değişkenleri dinamik alanlara dönüştürür">
                             <input
                               type="checkbox"
                               checked={block.isDynamic || false}
@@ -655,8 +655,10 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                                 const newBlocks = blocks.map(b => b.id === block.id ? { ...b, isDynamic: e.target.checked } : b);
                                 updateNote(note.id, 'blocks', newBlocks);
                               }}
+                              style={{ display: 'none' }}
                             />
-                            <span>Dinamik Mod</span>
+                            <Sparkles size={12} className={block.isDynamic ? 'animate-sparkle' : ''} />
+                            <span>Değişken Modu</span>
                           </label>
                         )}
                       </div>
