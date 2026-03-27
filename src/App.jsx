@@ -934,7 +934,16 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange, plugins, 
                       </div>
                       <button
                         className={`btn ${isInstalled ? 'btn-danger' : 'btn-primary'}`}
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: isInstalled ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-color)', borderColor: isInstalled ? 'rgba(239, 68, 68, 0.3)' : 'transparent', color: isInstalled ? '#ef4444' : '#fff' }}
+                        style={{
+                          padding: '0.4rem 0.8rem',
+                          fontSize: '0.75rem',
+                          minWidth: '70px',
+                          display: 'flex',
+                          justifyContent: 'center',
+                          background: isInstalled ? 'rgba(239, 68, 68, 0.15)' : 'var(--accent-color)',
+                          borderColor: isInstalled ? 'rgba(239, 68, 68, 0.3)' : 'transparent',
+                          color: isInstalled ? '#ef4444' : '#fff'
+                        }}
                         onClick={() => togglePluginInstall(plugin.id)}
                       >
                         {isInstalled ? 'Kaldır' : 'Yükle'}
