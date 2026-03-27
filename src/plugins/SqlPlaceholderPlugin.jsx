@@ -3,7 +3,7 @@ import { Database, Copy, Check, Terminal, RefreshCw, FileText, AlignLeft } from 
 
 const SqlPlaceholderPlugin = {
     id: 'sql-placeholder-fixer',
-    name: 'KK V1 Rapor Sorgu Çevirici',
+    name: 'KK V2 Rapor Sorgu Çevirici',
     icon: <Database size={16} />,
     component: () => {
         const [input, setInput] = useState('');
@@ -91,7 +91,7 @@ const SqlPlaceholderPlugin = {
                                 <Database className="text-purple-400" size={22} />
                             </div>
                             <div>
-                                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff', margin: 0 }}>KK V1 Rapor Sorgu Çevirici</h2>
+                                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: '#fff', margin: 0 }}>KK V2 Rapor Sorgu Çevirici</h2>
                                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>JSON verisini SQL sorgusu ile otomatik olarak harmanlar ve düzenler.</p>
                             </div>
                         </div>

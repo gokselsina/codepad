@@ -712,7 +712,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                     {block.isDynamic && (
                       <div className={`dynamic-params-panel ${collapsedParams[block.id] ? 'collapsed' : ''}`}>
                         <div className="params-header" onClick={() => toggleParamsCollapsed(block.id)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                          <Sparkles size={12} />
+                          <Sparkles size={12} className={!collapsedParams[block.id] ? 'animate-sparkle' : ''} />
                           <span style={{ flex: 1 }}>Dinamik Parametreler</span>
                           {collapsedParams[block.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                         </div>
