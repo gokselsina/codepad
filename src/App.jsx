@@ -657,7 +657,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                               }}
                               style={{ display: 'none' }}
                             />
-                            <Sparkles size={12} className={block.isDynamic ? 'animate-sparkle' : ''} />
+                            <Sparkles size={12} className={(block.isDynamic && !collapsedParams[block.id]) ? 'animate-sparkle' : ''} />
                             <span>Değişken Modu</span>
                           </label>
                         )}
@@ -1612,6 +1612,7 @@ function MainApp({ currentUser, onLogout }) {
                   setActivePluginId(plugin.id);
                   setSelectedNoteId(null);
                   setIsPartyRoomActive(false);
+                  setCollapsedParams({}); // Reset when switching to a plugin
                 }}
                 style={{ cursor: 'pointer' }}
               >
@@ -1692,6 +1693,15 @@ function MainApp({ currentUser, onLogout }) {
                             setSelectedNoteId(n.id);
                             setIsPartyRoomActive(false);
                             setActivePluginId(null);
+
+                            // Collapse all dynamic parameter panels by default when opening a note
+                            const newCollapsed = {};
+                            (n.blocks || []).forEach(b => {
+                              if (b.type === 'code' && b.isDynamic) {
+                                newCollapsed[b.id] = true;
+                              }
+                            });
+                            setCollapsedParams(newCollapsed);
                           }}
                           draggable={!n.isShared}
                           onDragStart={(e) => handleNoteDragStart(e, n.id)}
