@@ -19,4 +19,4 @@ jobs:
           script: |
             export QT_QPA_PLATFORM=offscreen
             cd ~/codepad
-            npm run build
+            npm run deploy
