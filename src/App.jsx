@@ -441,6 +441,37 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     e.target.style.height = e.target.scrollHeight + 'px';
   };
 
+  const [activeParams, setActiveParams] = useState({}); // { blockId: { paramName: value } }
+
+  const resolveDynamicContent = (content, blockId) => {
+    const params = activeParams[blockId] || {};
+    let resolved = content;
+    Object.entries(params).forEach(([key, val]) => {
+      if (val) {
+        // Replace $key with val, handling word boundaries to avoid partial matches
+        const regex = new RegExp(`\\$${key}\\b`, 'g');
+        resolved = resolved.replace(regex, val);
+      }
+    });
+    return resolved;
+  };
+
+  const getParamsFromCode = (code) => {
+    const regex = /\$([a-zA-Z0-9_]+)/g;
+    const matches = [...code.matchAll(regex)];
+    return [...new Set(matches.map(m => m[1]))];
+  };
+
+  const updateParamValue = (blockId, paramName, value) => {
+    setActiveParams(prev => ({
+      ...prev,
+      [blockId]: {
+        ...(prev[blockId] || {}),
+        [paramName]: value
+      }
+    }));
+  };
+
 
   return (
     <>
@@ -606,9 +637,26 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                           <option value="json">JSON</option>
                           <option value="markdown">Markdown</option>
                         </select>
+                        {!isReadOnly && (
+                          <label className="dynamic-toggle" title="Kod içindeki $değişkenleri dinamik alanlara dönüştürür">
+                            <input
+                              type="checkbox"
+                              checked={block.isDynamic || false}
+                              onChange={(e) => {
+                                const newBlocks = blocks.map(b => b.id === block.id ? { ...b, isDynamic: e.target.checked } : b);
+                                updateNote(note.id, 'blocks', newBlocks);
+                              }}
+                            />
+                            <span>Dinamik Mod</span>
+                          </label>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                        <button className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`} style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={() => handleCopy(block.id, block.content)}>
+                        <button
+                          className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`}
+                          style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                          onClick={() => handleCopy(block.id, block.isDynamic ? resolveDynamicContent(block.content, block.id) : block.content)}
+                        >
                           {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
                           {copiedBlockId === block.id ? 'Kopyalandı' : 'Kopyala'}
                         </button>
@@ -650,6 +698,31 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                         }}
                       />
                     </div>
+                    {block.isDynamic && (
+                      <div className="dynamic-params-panel">
+                        <div className="params-header">
+                          <Sparkles size={12} /> <span>Dinamik Parametreler</span>
+                        </div>
+                        <div className="params-grid">
+                          {getParamsFromCode(block.content).map(param => (
+                            <div key={param} className="param-input-group">
+                              <label>${param}</label>
+                              <input
+                                type="text"
+                                placeholder={`${param} değerini gir...`}
+                                value={activeParams[block.id]?.[param] || ''}
+                                onChange={(e) => updateParamValue(block.id, param, e.target.value)}
+                              />
+                            </div>
+                          ))}
+                          {getParamsFromCode(block.content).length === 0 && (
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '0.5rem' }}>
+                              Kod içinde $ ile başlayan değişken bulunamadı (Örn: $kart_no)
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   {!isReadOnly && (
                     <div className="inline-add-container">

@@ -1412,3 +1412,81 @@ pre[class*="language-"] {
   background: var(--danger-color) !important;
   color: #fff !important;
 }
+
+/* Dynamic Parameter Panel */
+.dynamic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s;
+}
+
+.dynamic-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--accent-color);
+}
+
+.dynamic-toggle input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.dynamic-params-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid var(--card-border);
+  padding: 0.75rem 1rem;
+}
+
+.params-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent-color);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.params-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.param-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.param-input-group label {
+  font-size: 0.7rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-muted);
+}
+
+.param-input-group input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.8rem;
+  color: #fff;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.param-input-group input:focus {
+  border-color: var(--accent-color);
+  outline: none;
+  background: rgba(255, 255, 255, 0.08);
+}
