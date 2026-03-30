@@ -1320,6 +1320,9 @@ function MainApp({ currentUser, onLogout }) {
         setWorkspace({ type: 'personal', id: currentUser });
       }
       setSelectedNoteId(item.id);
+      if (!openWindows.includes(item.id)) {
+        setOpenWindows(prev => [...prev, item.id]);
+      }
       setIsPartyRoomActive(false);
     } else if (item.spotlightType === 'team') {
       setWorkspace({ type: 'team', id: item.id, name: item.name });
@@ -1429,9 +1432,11 @@ function MainApp({ currentUser, onLogout }) {
   const deleteFolder = (id) => {
     if (id === 'f_shared') return; // Cannot delete virtual shared folder
     if (confirm('Kategoriyi silersen içindeki notlar da silinir. Onaylıyor musun?')) {
+      const notesInFolder = notes.filter(n => n.folderId === id).map(n => n.id);
       const updatedNotes = notes.filter(n => n.folderId !== id);
       setNotes(updatedNotes);
       setFolders(folders.filter(f => f.id !== id));
+      setOpenWindows(prev => prev.filter(winId => !notesInFolder.includes(winId)));
       if (updatedNotes.length > 0) {
         setSelectedNoteId(updatedNotes[0].id);
       } else {
@@ -1458,6 +1463,15 @@ function MainApp({ currentUser, onLogout }) {
     if (isRemote) initialMount.current = false; // Just to be safe but usually we want to save
   };
 
+  const closeTab = (noteId, e) => {
+    if (e) e.stopPropagation();
+    const newWindows = openWindows.filter(id => id !== noteId);
+    setOpenWindows(newWindows);
+    if (selectedNoteId === noteId) {
+      setSelectedNoteId(newWindows.length > 0 ? newWindows[newWindows.length - 1] : null);
+    }
+  };
+
   const updateNotePartyRoom = (id, field, value, isRemote = false) => {
     setPartyNote(prev => ({ ...prev, [field]: value }));
     if (!isRemote) {
@@ -1474,6 +1488,7 @@ function MainApp({ currentUser, onLogout }) {
     const updated = notes.filter(n => n.id !== id);
     setNotes(updated);
     if (selectedNoteId === id) setSelectedNoteId(updated.length > 0 ? updated[0].id : null);
+    setOpenWindows(prev => prev.filter(winId => winId !== id));
   };
 
   const handleFolderDragStart = (e, folderId) => {
@@ -1900,6 +1915,9 @@ function MainApp({ currentUser, onLogout }) {
                           className={`tree-note-item ${n.id === selectedNoteId ? 'active' : ''} ${isNoteDragging ? 'dragging' : ''} ${dragNoteClass}`}
                           onClick={() => {
                             setSelectedNoteId(n.id);
+                            if (!openWindows.includes(n.id)) {
+                              setOpenWindows(prev => [...prev, n.id]);
+                            }
                             setIsPartyRoomActive(false);
                             setActivePluginId(null);
 
@@ -1975,6 +1993,28 @@ function MainApp({ currentUser, onLogout }) {
             </button>
           </div>
         </header>
+
+        {openWindows.length > 0 && !activePluginId && !isPartyRoomActive && (
+          <div className="note-tabs-container">
+            {openWindows.map(id => {
+              const fullNote = notes.find(n => n.id === id);
+              if (!fullNote) return null;
+              return (
+                <div
+                  key={id}
+                  className={`note-tab ${id === selectedNoteId ? 'active' : ''}`}
+                  onClick={() => setSelectedNoteId(id)}
+                >
+                  <FileText size={14} />
+                  <span className="tab-title">{fullNote.title || 'İsimsiz Not'}</span>
+                  <button className="tab-close" onClick={(e) => closeTab(id, e)}>
+                    <X size={12} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {activePluginId ? (
           <div className="plugin-wrapper animate-fade-in" style={{ flex: 1, overflow: 'auto' }}>
