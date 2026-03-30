@@ -1472,6 +1472,10 @@ pre[class*="language-"] {
   padding-bottom: 0.25rem;
 }
 
+.dynamic-params-panel.collapsed .params-header {
+  margin-bottom: 0;
+}
+
 .params-header {
   display: flex;
   align-items: center;
@@ -1482,6 +1486,7 @@ pre[class*="language-"] {
   margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  transition: margin-bottom 0.2s ease;
 }
 
 .params-grid {

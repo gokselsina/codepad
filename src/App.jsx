@@ -590,11 +590,9 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     e.target.style.height = e.target.scrollHeight + 'px';
   };
 
-  const [activeParams, setActiveParams] = useState({}); // { blockId: { paramName: value } }
-
-  const resolveDynamicContent = (content, blockId) => {
-    const params = activeParams[blockId] || {};
-    let resolved = content;
+  const resolveDynamicContent = (block) => {
+    const params = block.params || {};
+    let resolved = block.content;
     Object.entries(params).forEach(([key, val]) => {
       if (val) {
         // Replace $key with val, handling word boundaries to avoid partial matches
@@ -612,19 +610,22 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
   };
 
   const updateParamValue = (blockId, paramName, value) => {
-    setActiveParams(prev => ({
-      ...prev,
-      [blockId]: {
-        ...(prev[blockId] || {}),
-        [paramName]: value
-      }
-    }));
+    const newBlocks = blocks.map(b =>
+      b.id === blockId
+        ? { ...b, params: { ...(b.params || {}), [paramName]: value } }
+        : b
+    );
+    updateNote(note.id, 'blocks', newBlocks);
+
+    if (isPartyMode && socketRef.current) {
+      socketRef.current.emit('blocksChanged', { noteId: note.id, blocks: newBlocks, username: currentUser });
+    }
   };
 
-  const [collapsedParams, setCollapsedParams] = useState({}); // { blockId: boolean }
+  const [expandedParams, setExpandedParams] = useState({}); // { blockId: boolean }
 
-  const toggleParamsCollapsed = (blockId) => {
-    setCollapsedParams(prev => ({
+  const toggleParamsExpanded = (blockId) => {
+    setExpandedParams(prev => ({
       ...prev,
       [blockId]: !prev[blockId]
     }));
@@ -866,7 +867,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                               }}
                               style={{ display: 'none' }}
                             />
-                            <Sparkles size={12} className={(block.isDynamic && !collapsedParams[block.id]) ? 'animate-sparkle' : ''} />
+                            <Sparkles size={12} className={(block.isDynamic && expandedParams[block.id]) ? 'animate-sparkle' : ''} />
                             <span>Değişken Modu</span>
                           </label>
                         )}
@@ -875,7 +876,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                         <button
                           className={`btn ${copiedBlockId === block.id ? 'btn-success' : 'btn-primary'}`}
                           style={{ padding: '0.2rem 0.6rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                          onClick={() => handleCopy(block.id, block.isDynamic ? resolveDynamicContent(block.content, block.id) : block.content)}
+                          onClick={() => handleCopy(block.id, block.isDynamic ? resolveDynamicContent(block) : block.content)}
                         >
                           {copiedBlockId === block.id ? <Check size={14} /> : <Copy size={14} />}
                           {copiedBlockId === block.id ? 'Kopyalandı' : 'Kopyala'}
@@ -919,13 +920,13 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                       />
                     </div>
                     {block.isDynamic && (
-                      <div className={`dynamic-params-panel ${collapsedParams[block.id] ? 'collapsed' : ''}`}>
-                        <div className="params-header" onClick={() => toggleParamsCollapsed(block.id)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                          <Sparkles size={12} className={!collapsedParams[block.id] ? 'animate-sparkle' : ''} />
+                      <div className={`dynamic-params-panel ${!expandedParams[block.id] ? 'collapsed' : ''}`}>
+                        <div className="params-header" onClick={() => toggleParamsExpanded(block.id)} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                          <Sparkles size={12} className={expandedParams[block.id] ? 'animate-sparkle' : ''} />
                           <span style={{ flex: 1 }}>Dinamik Parametreler</span>
-                          {collapsedParams[block.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+                          {!expandedParams[block.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                         </div>
-                        {!collapsedParams[block.id] && (
+                        {expandedParams[block.id] && (
                           <div className="params-grid animate-fade-in">
                             {getParamsFromCode(block.content).map(param => (
                               <div key={param} className="param-input-group">
@@ -933,7 +934,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                                 <input
                                   type="text"
                                   placeholder={`${param} değerini gir...`}
-                                  value={activeParams[block.id]?.[param] || ''}
+                                  value={block.params?.[param] || ''}
                                   onChange={(e) => updateParamValue(block.id, param, e.target.value)}
                                 />
                               </div>
