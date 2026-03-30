@@ -1443,24 +1443,6 @@ pre[class*="language-"] {
   box-shadow: 0 0 15px rgba(139, 92, 246, 0.1);
 }
 
-.animate-sparkle {
-  animation: sparkleRotate 2s linear infinite;
-}
-
-@keyframes sparkleRotate {
-  0% {
-    transform: scale(1) rotate(0deg);
-  }
-
-  50% {
-    transform: scale(1.2) rotate(180deg);
-  }
-
-  100% {
-    transform: scale(1) rotate(360deg);
-  }
-}
-
 .dynamic-params-panel {
   background: rgba(0, 0, 0, 0.3);
   border-top: 1px solid var(--card-border);
@@ -1468,13 +1450,7 @@ pre[class*="language-"] {
   transition: all 0.3s ease;
 }
 
-.dynamic-params-panel.collapsed {
-  padding-bottom: 0.25rem;
-}
 
-.dynamic-params-panel.collapsed .params-header {
-  margin-bottom: 0;
-}
 
 .params-header {
   display: flex;

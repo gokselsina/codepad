@@ -622,14 +622,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
     }
   };
 
-  const [expandedParams, setExpandedParams] = useState({}); // { blockId: boolean }
 
-  const toggleParamsExpanded = (blockId) => {
-    setExpandedParams(prev => ({
-      ...prev,
-      [blockId]: !prev[blockId]
-    }));
-  };
 
 
   return (
@@ -867,7 +860,7 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                               }}
                               style={{ display: 'none' }}
                             />
-                            <Sparkles size={12} className={(block.isDynamic && expandedParams[block.id]) ? 'animate-sparkle' : ''} />
+                            <Sparkles size={12} />
                             <span>Değişken Modu</span>
                           </label>
                         )}
@@ -920,32 +913,29 @@ function NoteCard({ note, updateNote, deleteNote, currentUser, workspace, isForc
                       />
                     </div>
                     {block.isDynamic && (
-                      <div className={`dynamic-params-panel ${!expandedParams[block.id] ? 'collapsed' : ''}`}>
-                        <div className="params-header" onClick={() => toggleParamsExpanded(block.id)} style={{ cursor: 'pointer', userSelect: 'none' }}>
-                          <Sparkles size={12} className={expandedParams[block.id] ? 'animate-sparkle' : ''} />
+                      <div className="dynamic-params-panel">
+                        <div className="params-header">
+                          <Sparkles size={12} />
                           <span style={{ flex: 1 }}>Dinamik Parametreler</span>
-                          {!expandedParams[block.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                         </div>
-                        {expandedParams[block.id] && (
-                          <div className="params-grid animate-fade-in">
-                            {getParamsFromCode(block.content).map(param => (
-                              <div key={param} className="param-input-group">
-                                <label>${param}</label>
-                                <input
-                                  type="text"
-                                  placeholder={`${param} değerini gir...`}
-                                  value={block.params?.[param] || ''}
-                                  onChange={(e) => updateParamValue(block.id, param, e.target.value)}
-                                />
-                              </div>
-                            ))}
-                            {getParamsFromCode(block.content).length === 0 && (
-                              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '0.5rem' }}>
-                                Kod içinde $ ile başlayan değişken bulunamadı (Örn: $kart_no)
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <div className="params-grid animate-fade-in">
+                          {getParamsFromCode(block.content).map(param => (
+                            <div key={param} className="param-input-group">
+                              <label>${param}</label>
+                              <input
+                                type="text"
+                                placeholder={`${param} değerini gir...`}
+                                value={block.params?.[param] || ''}
+                                onChange={(e) => updateParamValue(block.id, param, e.target.value)}
+                              />
+                            </div>
+                          ))}
+                          {getParamsFromCode(block.content).length === 0 && (
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic', padding: '0.5rem' }}>
+                              Kod içinde $ ile başlayan değişken bulunamadı (Örn: $kart_no)
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
