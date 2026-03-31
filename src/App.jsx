@@ -1066,11 +1066,11 @@ function Spotlight({ isOpen, onClose, folders, notes, teams, onSelect }) {
 function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange, plugins, userInstalledPlugins, togglePluginInstall }) {
   const themes = [
     { id: 'midnight', name: 'Midnight Premium', class: '', colors: ['#030712', '#112240', '#60a5fa'], stats: 'Varsayılan' },
-    { id: 'termius-light', name: 'Termius Light', class: 'theme-termius-light', colors: ['#f3f4f6', '#ffffff', '#2563eb'], stats: '34561' },
-    { id: 'hacker-green', name: 'Hacker Green', class: 'theme-hacker-green', colors: ['#050505', '#000000', '#22c55e'], stats: '10954' },
-    { id: 'hacker-red', name: 'Hacker Red', class: 'theme-hacker-red', colors: ['#050505', '#000000', '#ef4444'], stats: '1091' },
-    { id: 'kanagawa', name: 'Kanagawa Dragon', class: 'theme-kanagawa-dragon', colors: ['#181616', '#242222', '#c0a070'], stats: '13922' },
-    { id: 'everforest', name: 'Everforest Dark', class: 'theme-everforest-dark', colors: ['#2d353b', '#2b3339', '#a7c080'], stats: '7695' },
+    { id: 'nordic', name: 'Nordic Frost', class: 'theme-nordic-frost', colors: ['#1a1b26', '#1e2030', '#7aa2f7'], stats: '1.2k' },
+    { id: 'dracula', name: 'Dracula Refined', class: 'theme-dracula-refined', colors: ['#282a36', '#44475a', '#bd93f9'], stats: '3.4k' },
+    { id: 'solarized', name: 'Solarized Deep', class: 'theme-solarized-deep', colors: ['#002b36', '#073642', '#2aa198'], stats: '2.1k' },
+    { id: 'github-dimmed', name: 'GitHub Dimmed', class: 'theme-github-dimmed', colors: ['#22272e', '#2d333b', '#539bf5'], stats: '5.8k' },
+    { id: 'astro-purple', name: 'Astro Purple', class: 'theme-astro-purple', colors: ['#0f172a', '#1e293b', '#c084fc'], stats: '890' },
   ];
 
   const [activeTab, setActiveTab] = useState('apps');
@@ -1106,7 +1106,7 @@ function SettingsPanel({ isOpen, onClose, currentTheme, onThemeChange, plugins, 
                       <div className="p-row" style={{ backgroundColor: t.colors[2], opacity: 0.5 }} />
                     </div>
                     <div className="theme-info">
-                      <span className="theme-name" style={{ color: t.id === 'termius-light' ? '#111827' : '#fff' }}>{t.name}</span>
+                      <span className="theme-name" style={{ color: '#fff' }}>{t.name}</span>
                       <span className="theme-stats">{t.stats}</span>
                     </div>
                     {currentTheme === t.class && <Check size={16} color="var(--accent-color)" />}

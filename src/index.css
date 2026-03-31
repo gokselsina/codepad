@@ -16,62 +16,64 @@
   --panel-bg: rgba(15, 15, 20, 0.95);
 }
 
-.theme-termius-light {
-  --bg-color: #f3f4f6;
+.theme-nordic-frost {
+  --bg-color: #1a1b26;
+  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(122, 162, 247, 0.08), transparent 40%);
+  --card-bg: rgba(30, 32, 48, 0.8);
+  --card-border: rgba(255, 255, 255, 0.06);
+  --text-main: #a9b1d6;
+  --text-muted: #565f89;
+  --accent-color: #7aa2f7;
+  --accent-hover: #89ddff;
+  --panel-bg: rgba(26, 27, 38, 0.98);
+}
+
+.theme-dracula-refined {
+  --bg-color: #282a36;
+  --bg-gradient: radial-gradient(circle at 85% 30%, rgba(189, 147, 249, 0.08), transparent 40%);
+  --card-bg: rgba(68, 71, 90, 0.6);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --text-main: #f8f8f2;
+  --text-muted: #6272a4;
+  --accent-color: #bd93f9;
+  --accent-hover: #ff79c6;
+  --panel-bg: rgba(40, 42, 54, 0.98);
+}
+
+.theme-solarized-deep {
+  --bg-color: #002b36;
+  --bg-gradient: radial-gradient(circle at 50% 50%, rgba(42, 161, 152, 0.05), transparent 70%);
+  --card-bg: rgba(7, 54, 66, 0.75);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --text-main: #93a1a1;
+  --text-muted: #586e75;
+  --accent-color: #2aa198;
+  --accent-hover: #268bd2;
+  --panel-bg: rgba(0, 43, 54, 0.98);
+}
+
+.theme-github-dimmed {
+  --bg-color: #22272e;
   --bg-gradient: none;
-  --card-bg: rgba(255, 255, 255, 0.9);
-  --card-border: rgba(0, 0, 0, 0.08);
-  --text-main: #111827;
-  --text-muted: #6b7280;
-  --accent-color: #2563eb;
-  --accent-hover: #1d4ed8;
-  --panel-bg: rgba(255, 255, 255, 0.98);
+  --card-bg: rgba(45, 51, 59, 0.85);
+  --card-border: rgba(68, 76, 86, 0.6);
+  --text-main: #adbac7;
+  --text-muted: #768390;
+  --accent-color: #539bf5;
+  --accent-hover: #316dca;
+  --panel-bg: rgba(34, 39, 46, 0.98);
 }
 
-.theme-hacker-green {
-  --bg-color: #050505;
-  --bg-gradient: radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.05), transparent 70%);
-  --card-bg: rgba(0, 0, 0, 0.8);
-  --card-border: rgba(34, 197, 94, 0.2);
-  --text-main: #22c55e;
-  --text-muted: #166534;
-  --accent-color: #22c55e;
-  --accent-hover: #4ade80;
-  --panel-bg: rgba(5, 5, 5, 0.98);
-}
-
-.theme-hacker-red {
-  --bg-color: #050505;
-  --bg-gradient: radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.05), transparent 70%);
-  --card-bg: rgba(0, 0, 0, 0.8);
-  --card-border: rgba(239, 68, 68, 0.2);
-  --text-main: #ef4444;
-  --text-muted: #991b1b;
-  --accent-color: #ef4444;
-  --accent-hover: #f87171;
-  --panel-bg: rgba(5, 5, 5, 0.98);
-}
-
-.theme-kanagawa-dragon {
-  --bg-color: #181616;
-  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(192, 160, 112, 0.05), transparent 40%);
-  --card-bg: rgba(24, 22, 22, 0.9);
-  --card-border: rgba(192, 160, 112, 0.15);
-  --text-main: #c5c9c5;
-  --text-muted: #8a8980;
-  --accent-color: #c0a070;
-  --accent-hover: #e6c384;
-}
-
-.theme-everforest-dark {
-  --bg-color: #2d353b;
-  --bg-gradient: none;
-  --card-bg: rgba(43, 51, 57, 0.9);
-  --card-border: rgba(211, 198, 170, 0.1);
-  --text-main: #d3c6aa;
-  --text-muted: #859289;
-  --accent-color: #a7c080;
-  --accent-hover: #bdae8b;
+.theme-astro-purple {
+  --bg-color: #0f172a;
+  --bg-gradient: radial-gradient(circle at 15% 50%, rgba(192, 132, 252, 0.1), transparent 40%);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --text-main: #e2e8f0;
+  --text-muted: #64748b;
+  --accent-color: #c084fc;
+  --accent-hover: #a855f7;
+  --panel-bg: rgba(15, 23, 42, 0.98);
 }
 
 * {
@@ -1499,6 +1501,7 @@ pre[class*="language-"] {
   outline: none;
   background: rgba(255, 255, 255, 0.08);
 }
+
 /* Note Tabs */
 .note-tabs-container {
   display: flex;
